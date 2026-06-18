@@ -40,7 +40,7 @@ interface ApplicationListProps {
   }>;
 }
 
-export function ApplicationList({ programId, applications }: ApplicationListProps) {
+export function ApplicationList({ applications }: ApplicationListProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [autoRejectOthers, setAutoRejectOthers] = useState(false);

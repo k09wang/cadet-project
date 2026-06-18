@@ -26,7 +26,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import PostPage from "@/app/(app)/posts/[id]/page";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 
 const PUBLIC_POST = {
   id: "post-public",

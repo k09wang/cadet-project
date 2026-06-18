@@ -13,6 +13,11 @@ export function formatDate(value: Date | string | null | undefined): string | nu
   return d.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
 }
 
+/** 원화 금액 표시 (SPEC-006). 예: 35000 → "₩35,000". */
+export function formatKrw(amount: number): string {
+  return `₩${amount.toLocaleString("ko-KR")}`;
+}
+
 /** 시작~종료 기간 표시. 둘 다 없으면 null. */
 export function formatProgramPeriod(
   start: Date | string | null | undefined,

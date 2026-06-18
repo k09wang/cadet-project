@@ -11,7 +11,6 @@ vi.mock("@/lib/applications", () => ({
 import { PATCH } from "@/app/api/applications/[id]/route";
 
 const CREATOR = { id: "u-2", role: "CREATOR", creatorProfile: { id: "cp-1" } };
-const FAN = { id: "u-1", role: "FAN", creatorProfile: null };
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
 function patchReq(body: unknown) {

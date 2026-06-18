@@ -38,7 +38,6 @@ import {
   processApplication,
   notifyProgramClosed,
   type ApplicationServiceContext,
-  type ApplicationServiceResult,
 } from "./applications";
 
 const CREATOR_CTX: ApplicationServiceContext = {

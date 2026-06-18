@@ -10,6 +10,8 @@ export const NOTIFICATION_TYPES = [
   "APPLICATION_REJECTED",
   "APPLICATION_AUTO_REJECTED",
   "PROGRAM_CLOSED",
+  // SPEC-006 FR-010: 결제 완료 알림
+  "PAYMENT_COMPLETED",
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -17,13 +19,17 @@ export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 /**
  * 알림 타입에 따른 링크 URL 생성 (NFR-005).
  *
- * 모든 APPLICATION_* 타입과 PROGRAM_CLOSED는 크리에이터 대시보드의
+ * APPLICATION_* 타입과 PROGRAM_CLOSED는 크리에이터 대시보드의
  * 프로그램 신청 목록으로 연결된다.
+ * PAYMENT_COMPLETED(SPEC-006)는 해당 계약 확인 페이지로 연결된다.
  */
 export function notificationHref(
   type: NotificationType,
-  ctx: { programId?: string; applicationId?: string },
+  ctx: { programId?: string; applicationId?: string; contractId?: string },
 ): string | null {
+  if (type === "PAYMENT_COMPLETED") {
+    return ctx.contractId ? `/contracts/${ctx.contractId}` : null;
+  }
   if (!ctx.programId) return null;
   return `/dashboard/creator/programs/${ctx.programId}/applications`;
 }
@@ -46,6 +52,8 @@ export function buildNotificationMessage(
       return "다른 참여자가 선택되어 자동으로 거절되었습니다.";
     case "PROGRAM_CLOSED":
       return "프로그램 모집이 마감되었습니다.";
+    case "PAYMENT_COMPLETED":
+      return "결제가 완료되었습니다.";
     default:
       // TypeScript에서 exhaustiveness 검사를 위해
       const _exhaustive: never = type;

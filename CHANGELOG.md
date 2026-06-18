@@ -6,6 +6,19 @@
 
 ## [Unreleased]
 
+### Added — SPEC-006: 계약(약관) 및 Mock 결제
+
+- 계약 생성/조회 — `ACCEPTED` 신청 기반 `Contract` 지연 생성(lazy), `terms Json`에 `programTitle`·`priceKrw`·약관 스냅샷 저장, 동일 `applicationId` 재생성 방지.
+- 약관 서명 — 팬 본인이 "동의합니다" 체크 후 `PATCH /api/contracts/:id/sign`으로 `fanSignedAt` 설정. 미동의 시 400.
+- Mock 결제 — `PaymentProvider` 인터페이스 + `MockPaymentProvider`(`lib/payment/`, 외부 의존 없음, 항상 성공). 서명 완료 후 `POST /api/contracts/:id/payment` 호출 시 단일 `$transaction`으로 `Payment(status=PAID, feeKrw=amount*0.1)` + `Settlement(payout=amount-feeKrw, status=PENDING)` 생성 + `Program.status=IN_PROGRESS` 전환 + `PAYMENT_COMPLETED` 알림.
+- 중복 결제 차단 — 동일 계약에 `PAID`/`RELEASED` 결제 존재 시 409.
+- 접근 제어 — 팬 본인만 서명/결제 가능(타인 403), 크리에이터(소유자)는 읽기 전용 표시.
+- 계약 생성 API — `POST/GET /api/applications/:id/contract`.
+- UI — `/contracts/[id]`(약관·금액·`AgreementCheckbox`·`SignButton`·`PayButton`·`PaymentSuccessCard`), `/dashboard/fan/payments`(결제 내역).
+- 원화 표시 유틸 `formatKrw` 추가.
+- Prisma 마이그레이션 `20260619120000_spec006_contract_payment_align` — 레거시 `contracts.agreed_at` 제거 후 서명 추적 필드(`agreed_amount`, `fan_signed_at`, `creator_signed_at`) 추가, `payments.contract_id` 유니크 인덱스로 1계약 1결제 DB 강제(FR-008/AC-005). 이미 drift된 라이브 DB와 `migrate reset` 양쪽에 안전하도록 멱등 작성.
+- 시드 데이터 — `ACCEPTED` 신청 + (선택) 결제 완료 계약을 포함해 수락→결제 흐름 시연 지원(NFR-006).
+
 ### Added — SPEC-005: 팬 참여 신청·수락/거절 및 인앱 알림
 
 - 팬의 프로그램 참여 신청 생성 — 중복 신청 차단(409), 자기 참조 금지, 모집 상태(`RECRUITING`)·모집 기한 검증.

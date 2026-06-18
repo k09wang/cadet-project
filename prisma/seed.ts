@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import {
   PrismaClient,
   Role,
@@ -40,7 +39,7 @@ async function main() {
 
   // SPEC-002 NFR-001: 두 번째 크리에이터도 자체 plans/posts/programs 보유
   const profile2 = profiles[1];
-  const plans2 = await upsertPlansFor(profile2.id, "demo2-plan-1");
+  await upsertPlansFor(profile2.id, "demo2-plan-1");
   await upsertProgramsFor(profile2.id, "demo2-program-1");
   await upsertPostsFor(profile2.id, "demo2-post-1", "demo2-post-2");
 
@@ -50,6 +49,11 @@ async function main() {
 
   const payments = await upsertPayments(membership.id, contract.id, fans[0].id);
   await upsertSettlements(payments);
+
+  // SPEC-006 NFR-006: 수락→서명→결제 흐름을 즉시 시연할 수 있도록
+  // 미서명·미결제 상태의 ACCEPTED 계약을 1건 추가한다 (fans[1] 기준).
+  await upsertPendingContract(programs[0].id, fans[1].id);
+
   await upsertNotification(fans[0].id);
   await upsertReview(programs[0].id, fans[0].id);
   await upsertCommunityPost(profile.id, fans[0].id);
@@ -299,6 +303,36 @@ async function upsertContract(applicationId: string) {
       agreedAmount: 30000,
       fanSignedAt: new Date(),
       creatorSignedAt: new Date(),
+    },
+  });
+}
+
+// SPEC-006 NFR-006: 미서명·미결제 ACCEPTED 계약 (라이브 데모용).
+// fanSignedAt/creatorSignedAt을 null로 두어 서명 전 상태를 표현한다.
+async function upsertPendingContract(programId: string, fanUserId: string) {
+  const app = await prisma.programApplication.upsert({
+    where: { id: "demo-app-pending-pay" },
+    update: {},
+    create: {
+      id: "demo-app-pending-pay",
+      programId,
+      userId: fanUserId,
+      status: ProgramApplicationStatus.ACCEPTED,
+    },
+  });
+  return prisma.contract.upsert({
+    where: { applicationId: app.id },
+    update: {},
+    create: {
+      applicationId: app.id,
+      terms: {
+        programTitle: "데모 클럽 프로그램",
+        priceKrw: 30000,
+        agreement: "데모 약관 — 서명/결제 흐름 시연용",
+      },
+      agreedAmount: 30000,
+      fanSignedAt: null,
+      creatorSignedAt: null,
     },
   });
 }

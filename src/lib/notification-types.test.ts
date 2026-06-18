@@ -14,6 +14,7 @@ describe("notification-types (NFR-005)", () => {
       expect(NOTIFICATION_TYPES).toContain("APPLICATION_REJECTED");
       expect(NOTIFICATION_TYPES).toContain("APPLICATION_AUTO_REJECTED");
       expect(NOTIFICATION_TYPES).toContain("PROGRAM_CLOSED");
+      expect(NOTIFICATION_TYPES).toContain("PAYMENT_COMPLETED");
     });
   });
 
@@ -53,6 +54,17 @@ describe("notification-types (NFR-005)", () => {
       expect(result).toBe("/dashboard/creator/programs/prog-1/applications");
     });
 
+    it("PAYMENT_COMPLETED는 계약 확인 페이지로 연결 (SPEC-006 FR-010)", () => {
+      const result = notificationHref("PAYMENT_COMPLETED", {
+        contractId: "contract-1",
+      });
+      expect(result).toBe("/contracts/contract-1");
+    });
+
+    it("PAYMENT_COMPLETED는 contractId가 없으면 null", () => {
+      expect(notificationHref("PAYMENT_COMPLETED", {})).toBeNull();
+    });
+
     it("programId가 없으면 null을 반환", () => {
       const result = notificationHref("APPLICATION_CREATED", {});
       expect(result).toBeNull();
@@ -90,6 +102,11 @@ describe("notification-types (NFR-005)", () => {
     it("PROGRAM_CLOSED 메시지 생성", () => {
       const result = buildNotificationMessage("PROGRAM_CLOSED", {});
       expect(result).toBe("프로그램 모집이 마감되었습니다.");
+    });
+
+    it("PAYMENT_COMPLETED 메시지 생성 (SPEC-006 FR-010)", () => {
+      const result = buildNotificationMessage("PAYMENT_COMPLETED", {});
+      expect(result).toBe("결제가 완료되었습니다.");
     });
   });
 });

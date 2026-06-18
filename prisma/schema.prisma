@@ -211,7 +211,9 @@ model Contract {
 model Payment {
   id            String        @id @default(cuid())
   membershipId  String?       @map("membership_id")
-  contractId    String?       @map("contract_id")
+  // SPEC-006 FR-008: 1계약 1결제 — DB 레벨 중복 결제 차단. nullable이므로
+  // 멤버십 결제(contractId=null)는 Postgres가 다중 NULL을 허용해 영향 없음.
+  contractId    String?       @unique @map("contract_id")
   fanUserId     String        @map("fan_user_id")
   amount        Int
   feeKrw        Int           @default(0) @map("fee_krw")
