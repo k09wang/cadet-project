@@ -157,6 +157,8 @@ async function upsertPrograms(creatorProfileId: string) {
         category: "클래스",
         priceKrw: 30000,
         maxParticipants: 10,
+        // SPEC-004 NFR-001: 시드 프로그램은 recruitDeadline을 채운다 (미래 일자).
+        recruitDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         status: ProgramStatus.RECRUITING,
       },
     }),
@@ -220,6 +222,8 @@ async function upsertProgramsFor(creatorProfileId: string, id: string) {
         category: "워크숍",
         priceKrw: 25000,
         maxParticipants: 8,
+        // SPEC-004 NFR-001: 시드 프로그램은 recruitDeadline을 채운다 (미래 일자).
+        recruitDeadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
         status: ProgramStatus.RECRUITING,
       },
     }),
