@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ProgramDetail } from "@/components/programs/ProgramDetail";
+
+// Mock next/navigation for ApplyButton
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    refresh: vi.fn(),
+  }),
+}));
 
 describe("ProgramDetail (FR-004, FR-005, AC-003, AC-006)", () => {
   const base = {
@@ -11,6 +18,8 @@ describe("ProgramDetail (FR-004, FR-005, AC-003, AC-006)", () => {
     maxParticipants: 20,
     status: "RECRUITING" as const,
     creatorProfile: { id: "p-A", studioName: "드로잉 스튜디오" },
+    applied: false,
+    owner: false,
   };
 
   it("title·priceKrw·maxParticipants·status 배지를 표시한다 (AC-003)", () => {

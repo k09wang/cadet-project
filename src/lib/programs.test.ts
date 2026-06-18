@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockFindUnique = vi.fn();
 const mockCreate = vi.fn();
 const mockUpdate = vi.fn();
+const mockNotifyProgramClosed = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     program: {
@@ -11,6 +12,9 @@ vi.mock("@/lib/prisma", () => ({
       update: (...a: unknown[]) => mockUpdate(...a),
     },
   },
+}));
+vi.mock("@/lib/applications", () => ({
+  notifyProgramClosed: (...a: unknown[]) => mockNotifyProgramClosed(...a),
 }));
 
 import { createProgram, deleteProgram, updateProgram } from "@/lib/programs";
@@ -22,6 +26,7 @@ beforeEach(() => {
   mockFindUnique.mockReset();
   mockCreate.mockReset();
   mockUpdate.mockReset();
+  mockNotifyProgramClosed.mockReset();
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -73,9 +78,37 @@ describe("updateProgram (FR-006, FR-007, AC-005, AC-009, AC-010)", () => {
   it("RECRUITING→CLOSED 전이로 갱신한다 (AC-005)", async () => {
     mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-A", status: "RECRUITING", deletedAt: null });
     mockUpdate.mockResolvedValue({ id: "p1", status: "CLOSED" });
+    mockNotifyProgramClosed.mockResolvedValue(undefined);
     const r = await updateProgram(CREATOR, "p1", { status: "CLOSED" });
     expect(r.ok).toBe(true);
     expect(mockUpdate).toHaveBeenCalledWith({ where: { id: "p1" }, data: { status: "CLOSED" } });
+    expect(mockNotifyProgramClosed).toHaveBeenCalledWith("p1");
+  });
+
+  it("CLOSED 전이 시 notifyProgramClosed 호출 (FR-010, AC-006)", async () => {
+    mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-A", status: "RECRUITING", deletedAt: null });
+    mockUpdate.mockResolvedValue({ id: "p1", status: "CLOSED" });
+    mockNotifyProgramClosed.mockResolvedValue(undefined);
+    const r = await updateProgram(CREATOR, "p1", { status: "CLOSED" });
+    expect(r.ok).toBe(true);
+    expect(mockNotifyProgramClosed).toHaveBeenCalledTimes(1);
+  });
+
+  it("이미 CLOSED인 상태에서 CLOSED로 변경 시 알림 없음 (전이 없음)", async () => {
+    mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-A", status: "CLOSED", deletedAt: null });
+    mockUpdate.mockResolvedValue({ id: "p1", status: "CLOSED" });
+    const r = await updateProgram(CREATOR, "p1", { status: "CLOSED" });
+    expect(r.ok).toBe(true);
+    expect(mockNotifyProgramClosed).not.toHaveBeenCalled();
+  });
+
+  it("알림 실패해도 업데이트는 성공 (best-effort)", async () => {
+    mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-A", status: "RECRUITING", deletedAt: null });
+    mockUpdate.mockResolvedValue({ id: "p1", status: "CLOSED" });
+    mockNotifyProgramClosed.mockRejectedValue(new Error("Notification failed"));
+    const r = await updateProgram(CREATOR, "p1", { status: "CLOSED" });
+    expect(r.ok).toBe(true);
+    expect(mockUpdate).toHaveBeenCalled();
   });
 });
 

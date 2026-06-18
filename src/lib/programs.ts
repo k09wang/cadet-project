@@ -1,6 +1,7 @@
 import type { Program } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isTransitionAllowed } from "@/lib/program-status";
+import { notifyProgramClosed } from "@/lib/applications";
 import type { ProgramCreateInput, ProgramUpdateInput } from "@/lib/validation/program";
 
 /**
@@ -83,6 +84,18 @@ export async function updateProgram(
   }
 
   const updated = await prisma.program.update({ where: { id }, data: input });
+
+  // CLOSED 상태 전이 시 PENDING 신청자들에게 알림 (FR-010, AC-006)
+  // 알림 실패해도 업데이트는 롤백하지 않음 (best-effort)
+  if (input.status === "CLOSED" && owned.data.status !== "CLOSED") {
+    try {
+      await notifyProgramClosed(id);
+    } catch (error) {
+      // 알림 실패는 로깅만 하고 업데이트는 성공으로 처리
+      console.error("Failed to send program closed notifications:", error);
+    }
+  }
+
   return { ok: true, data: updated };
 }
 

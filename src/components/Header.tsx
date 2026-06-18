@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { logout } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notification/NotificationBell";
 
 /**
  * Global app header (SPEC-001 FR-006, FR-007).
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
  * Server component — reads the current user from the session cookie and
  * renders the name, a role badge, and a logout form. Returns null when no
  * session is present (login page renders without a header).
+ * SPEC-005: 알림 벨 추가.
  */
 export async function Header() {
   const user = await getCurrentUser();
@@ -34,11 +36,14 @@ export async function Header() {
           </div>
         </div>
 
-        <form action={logout}>
-          <Button type="submit" variant="outline" size="sm">
-            로그아웃
-          </Button>
-        </form>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <form action={logout}>
+            <Button type="submit" variant="outline" size="sm">
+              로그아웃
+            </Button>
+          </form>
+        </div>
       </div>
     </header>
   );

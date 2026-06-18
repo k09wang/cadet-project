@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ProgramStatus } from "@prisma/client";
 import { formatKrw } from "@/components/studio/MembershipPlanCardList";
 import { ProgramStatusBadge } from "@/components/programs/ProgramStatusBadge";
+import { ApplyButton } from "@/components/programs/ApplyButton";
 import { Button } from "@/components/ui/button";
 import { effectiveStatus } from "@/lib/program-status";
 import { formatDate, formatProgramPeriod } from "@/lib/format";
@@ -23,6 +24,10 @@ export interface ProgramDetailItem {
   recruitDeadline?: Date | string | null;
   maxParticipants?: number | null;
   creatorProfile?: { id: string; studioName: string } | null;
+  /** 현재 사용자의 신청 여부 (SPEC-005) */
+  applied?: boolean;
+  /** 현재 사용자가 본인 프로그램인지 여부 (SPEC-005) */
+  owner?: boolean;
 }
 
 export function ProgramDetail({ program }: { program: ProgramDetailItem }) {
@@ -32,6 +37,8 @@ export function ProgramDetail({ program }: { program: ProgramDetailItem }) {
   });
   const period = formatProgramPeriod(program.startDate, program.endDate);
   const deadline = formatDate(program.recruitDeadline);
+  const applied = program.applied ?? false;
+  const owner = program.owner ?? false;
 
   return (
     <article className="space-y-6">
@@ -88,11 +95,23 @@ export function ProgramDetail({ program }: { program: ProgramDetailItem }) {
       </dl>
 
       {status === "RECRUITING" ? (
-        <Button disabled title="SPEC-005에서 활성화됩니다">
-          참여 신청
-        </Button>
+        <ApplyButton
+          programId={program.id}
+          applied={applied}
+          recruiting={true}
+          owner={owner}
+        />
       ) : (
         <p className="text-sm text-muted-foreground">현재 모집 중이 아닙니다.</p>
+      )}
+
+      {/* SPEC-005: 크리에이터 본인인 경우 신청 관리 링크 추가 (선택) */}
+      {owner && (
+        <Link href={`/dashboard/creator/programs/${program.id}/applications`}>
+          <Button variant="outline" size="sm" className="w-full">
+            신청 관리
+          </Button>
+        </Link>
       )}
     </article>
   );

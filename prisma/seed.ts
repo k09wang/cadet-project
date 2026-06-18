@@ -333,8 +333,10 @@ async function upsertSettlements(payments: Array<{ id: string; amount: number; f
 
 // ──────────────────────────── 11. Notification ────────────────────────────
 
+// SPEC-005 T-016: 미읽음 알림 2~3개 추가 (AC-007 뱃지 데모)
 async function upsertNotification(userId: string) {
-  return prisma.notification.upsert({
+  // 기존 읽음 알림
+  await prisma.notification.upsert({
     where: { id: "demo-notif-1" },
     update: {},
     create: {
@@ -342,9 +344,40 @@ async function upsertNotification(userId: string) {
       userId,
       type: "APPLICATION_ACCEPTED",
       message: "신청이 수락되었습니다.",
-      linkUrl: `/contracts/demo-contract-1`,
+      linkUrl: `/dashboard/creator/programs/demo-program-1/applications`,
+      readAt: new Date(), // 읽음 상태
     },
   });
+
+  // 미읽음 알림 1: APPLICATION_CREATED
+  await prisma.notification.upsert({
+    where: { id: "demo-notif-2" },
+    update: {},
+    create: {
+      id: "demo-notif-2",
+      userId,
+      type: "APPLICATION_CREATED",
+      message: "새로운 신청이 도착했습니다.",
+      linkUrl: `/dashboard/creator/programs/demo-program-1/applications`,
+      readAt: null, // 미읽음
+    },
+  });
+
+  // 미읽음 알림 2: PROGRAM_CLOSED
+  await prisma.notification.upsert({
+    where: { id: "demo-notif-3" },
+    update: {},
+    create: {
+      id: "demo-notif-3",
+      userId,
+      type: "PROGRAM_CLOSED",
+      message: "프로그램 모집이 마감되었습니다.",
+      linkUrl: `/dashboard/creator/programs/demo-program-1/applications`,
+      readAt: null, // 미읽음
+    },
+  });
+
+  return prisma.notification.findMany({ where: { userId } });
 }
 
 // ──────────────────────────── 13. CommunityPost ────────────────────────────
