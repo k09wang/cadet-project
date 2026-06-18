@@ -57,6 +57,9 @@ async function main() {
   await upsertNotification(fans[0].id);
   await upsertReview(programs[0].id, fans[0].id);
   await upsertCommunityPost(profile.id, fans[0].id);
+  // SPEC-007 NFR-003: 권한 사용자 관점에서 최소 2개의 커뮤니티 글이 보이도록 추가.
+  // 두 번째 글은 크리에이터 본인이 작성한 공지 형태.
+  await upsertCommunityPostSecond(profile.id, creators[0].id);
 
   console.log("✓ Seed complete.");
   console.log(`  creators: ${creators.map((c) => c.email).join(", ")}`);
@@ -426,6 +429,21 @@ async function upsertCommunityPost(creatorProfileId: string, authorId: string) {
       authorId,
       title: "데모 커뮤니티 글",
       content: "멤버 전용 커뮤니티 첫 글입니다.",
+    },
+  });
+}
+
+// SPEC-007 NFR-003: 두 번째 커뮤니티 글 (크리에이터 작성 공지).
+async function upsertCommunityPostSecond(creatorProfileId: string, authorId: string) {
+  return prisma.communityPost.upsert({
+    where: { id: "demo-community-2" },
+    update: {},
+    create: {
+      id: "demo-community-2",
+      creatorProfileId,
+      authorId,
+      title: "이번 주 작업 공지",
+      content: "멤버 여러분께 드리는 두 번째 커뮤니티 공지입니다.",
     },
   });
 }

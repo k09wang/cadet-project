@@ -145,3 +145,18 @@ PRD §13.1, §13.2 기준.
 - 커뮤니티 이미지/미디어 업로드 — URL 입력만 (PRD §5.1).
 - 커뮤니티 글 검색/필터/태그 — P1.
 - 공지사항(핀) 기능 — 별도 UX 결정 시 추가 가능하나 본 SPEC 범위 밖.
+
+## 11. 구현 노트 (SYNC)
+
+- **상태**: completed (Level 1 spec-first) — TDD(RED-GREEN-REFACTOR), harness: standard.
+- **필드명 결정**: `CommunityPost.body` 대신 실제 스키마 기준 `content` 사용 (검증·쿼리·API·시드 전반이 일치).
+- **참여자 명단 정책 (AC-007)**: `ACCEPTED` 전체 표시 + 결제상태 배지. 미결제 `ACCEPTED`는 "결제 대기"로 표시(제외 아님).
+- **구현 매핑**:
+  - 접근제어 — `lib/community-access.ts` (`canAccessCommunity`, 결제완료 = `ProgramApplication.ACCEPTED` + `Contract.payments.status IN (PAID, RELEASED)`).
+  - 쿼리 — `lib/queries/community.ts`, `lib/queries/members.ts` (N+1 회피 `include`).
+  - 검증 — `lib/validation/community-post.ts`.
+  - API — `src/app/api/community-posts/route.ts` (GET/POST), `[id]/route.ts` (GET/PATCH/DELETE). 403은 서버 측(NFR-001).
+  - 페이지 — `/dashboard/creator/members`, `/dashboard/creator/programs/[id]/participants`, `/dashboard/fan/memberships`.
+  - 컴포넌트 — `src/components/community/*`.
+- **스키마 보완**: `prisma/migrations/20260619140000_spec007_community_post` (추가형, 멱등).
+- **품질**: lint(clean)·typecheck(0 err)·build(exit 0)·vitest 412/412 통과 (AC-011).

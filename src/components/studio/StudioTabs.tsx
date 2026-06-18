@@ -5,12 +5,13 @@ import { StudioHeader } from "@/components/studio/StudioHeader";
 import { PostCardList } from "@/components/studio/PostCardList";
 import { MembershipPlanCardList } from "@/components/studio/MembershipPlanCardList";
 import { ProgramCardList } from "@/components/studio/ProgramCardList";
+import { CommunityPanel } from "@/components/community/CommunityPanel";
 import type { PostVisibility } from "@prisma/client";
 
 /**
- * 스튜디오 탭 네비게이션 (SPEC-002 FR-007).
+ * 스튜디오 탭 네비게이션 (SPEC-002 FR-007, SPEC-007 FR-002, FR-003).
  * 5개 탭: 소개 / 포스트 / 멤버십 / 클럽 / 커뮤니티.
- * 커뮤니티는 곧 오픈됩니다 플레이스홀더.
+ * 커뮤니티 탭은 접근 권한에 따라 글 목록/작성 폼 또는 격벽 안내를 표시한다.
  */
 type TabId = "intro" | "posts" | "membership" | "club" | "community";
 
@@ -56,9 +57,28 @@ export interface StudioTabsProps {
   isActiveMember?: boolean;
   /** 멤버십 가입 Server Action — 서버 컴포넌트(page.tsx)에서 전달 */
   joinAction?: (planId: string) => Promise<void>;
+  /** 커뮤니티 대상 크리에이터 프로필 id (SPEC-007 FR-004) */
+  creatorProfileId: string;
+  /** 현재 사용자가 커뮤니티에 접근 가능한지 여부 (SPEC-007 FR-001, FR-002) */
+  canAccessCommunity?: boolean;
+  /** 커뮤니티 글 목록 (SPEC-007 FR-003) */
+  communityPosts?: Array<{
+    id: string;
+    title: string;
+    content: string;
+    createdAt: Date | string;
+    author: { id: string; name: string };
+  }>;
 }
 
-export function StudioTabs({ studio, isActiveMember = false, joinAction }: StudioTabsProps) {
+export function StudioTabs({
+  studio,
+  isActiveMember = false,
+  joinAction,
+  creatorProfileId,
+  canAccessCommunity = false,
+  communityPosts = [],
+}: StudioTabsProps) {
   const [active, setActive] = useState<TabId>("intro");
 
   return (
@@ -96,7 +116,11 @@ export function StudioTabs({ studio, isActiveMember = false, joinAction }: Studi
         ) : null}
         {active === "club" ? <ProgramCardList programs={studio.programs ?? []} /> : null}
         {active === "community" ? (
-          <p className="text-sm text-muted-foreground">커뮤니티는 곧 오픈됩니다.</p>
+          <CommunityPanel
+            creatorProfileId={creatorProfileId}
+            canAccess={canAccessCommunity}
+            posts={communityPosts}
+          />
         ) : null}
       </section>
     </div>

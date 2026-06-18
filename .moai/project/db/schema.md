@@ -38,6 +38,7 @@ status: migrated
 | `payments` | `Payment` | 9 | `id` | `prisma/schema.prisma` |
 | `settlements` | `Settlement` | 6 | `id` | `prisma/schema.prisma` |
 | `notifications` | `Notification` | 7 | `id` | `prisma/schema.prisma` |
+| `community_posts` | `CommunityPost` | 7 | `id` | `prisma/schema.prisma` (SPEC-007) |
 | `reviews` | `Review` | 6 | `id` | `prisma/schema.prisma` |
 
 ### Column Detail
@@ -169,6 +170,17 @@ status: migrated
 | `comment` | String | YES | — | |
 | `created_at` | DateTime | NO | `now()` | |
 
+#### `community_posts`
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| `id` | String(cuid) | NO | `cuid()` | PK |
+| `creator_profile_id` | String | NO | — | FK → `creator_profiles.id` (Cascade) |
+| `author_id` | String | NO | — | FK → `users.id` (Cascade) — 작성자(멤버/참여자/크리에이터) |
+| `title` | String | NO | — | |
+| `content` | String | NO | — | 본문 (SPEC 권장 `body` 대신 실제 스키마 필드명) |
+| `created_at` | DateTime | NO | `now()` | |
+| `updated_at` | DateTime | NO | `updatedAt()` | 자동 갱신 |
+
 ---
 
 ## Enums
@@ -205,6 +217,8 @@ status: migrated
 | `users` | `notifications` | 1:N | `notifications.user_id` | Cascade | 수신 알림 |
 | `programs` | `reviews` | 1:N | `reviews.program_id` | Cascade | 완료된 프로그램 리뷰 |
 | `users` | `reviews` | 1:N | `reviews.user_id` | Cascade | 팬 작성 리뷰 |
+| `creator_profiles` | `community_posts` | 1:N | `community_posts.creator_profile_id` | Cascade | 크리에이터 커뮤니티 글 (SPEC-007) |
+| `users` | `community_posts` | 1:N | `community_posts.author_id` | Cascade | 작성자별 커뮤니티 글 (SPEC-007) |
 
 ---
 
@@ -222,6 +236,7 @@ status: migrated
 | `program_applications` | `(user_id)` | INDEX | 팬별 신청 이력 |
 | `payments` | `(status, created_at)` | INDEX | 정산 대기 큐 조회 |
 | `notifications` | `(user_id, read_at)` | INDEX | 읽지 않은 알림 조회 |
+| `community_posts` | `(creator_profile_id, created_at)` | INDEX | 커뮤니티 탭 최신순 목록 (SPEC-007) |
 | `reviews` | `(program_id)` | INDEX | 프로그램별 리뷰 조회 |
 
 > UNIQUE로 선언된 단일 FK(`creator_profiles.user_id`, `contracts.application_id`,

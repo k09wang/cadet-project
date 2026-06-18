@@ -6,6 +6,18 @@
 
 ## [Unreleased]
 
+### Added — SPEC-007: 커뮤니티 및 멤버 관리
+
+- 커뮤니티 접근 제어 — `canAccessCommunity(userId, creatorProfileId)`(`lib/community-access.ts`) 헬퍼. 다음 중 하나면 `true`: 해당 크리에이터 활성 `Membership` / 결제완료 참여자(`ProgramApplication.status=ACCEPTED` + 연결 `Contract.payments` 중 `PAID`·`RELEASED`) / 소유 크리에이터 본인(FR-001). 권한은 다른 SPEC의 상태에서 파생되며 본 SPEC은 상태를 직접 변경하지 않음(NFR-004).
+- 비멤버 격벽 — 비권한 사용자에게 커뮤니티 콘텐츠 숨김 + "멤버십 가입 또는 프로그램 참여 시 열립니다" CTA(`CommunityLockedNotice`)(FR-002/AC-001).
+- 커뮤니티 글 CRUD — `GET /api/community-posts?creatorId=`, `POST /api/community-posts`, `PATCH|DELETE /api/community-posts/:id`. 작성은 권한 사용자, 수정·삭제는 작성자 본인 또는 소유 크리에이터(FR-003~007/AC-004,005,010). 비권한·타인 글 조작 시 403.
+- 크리에이터 명단 — `/dashboard/creator/members`(활성 `Membership` → 사용자명·플랜·가입일, N+1 회피 `include`)(FR-008/AC-006), `/dashboard/creator/programs/[id]/participants`(`ACCEPTED` 전체 + 결제상태 배지, 미결제는 "결제 대기" 표시)(FR-009/AC-007). 비소유 크리에이터·팬 접근 시 403(FR-010/AC-009).
+- 팬 내 멤버십 — `/dashboard/fan/memberships`(활성 멤버십 목록, 크리에이터명·플랜명·가입일)(FR-011/AC-008).
+- 컴포넌트 — `CommunityPanel`, `CommunityPostList`, `CommunityPostComposer`, `CommunityLockedNotice`, `MemberList`, `ParticipantList`, `MyMemberships`.
+- 쿼리·검증 — `lib/queries/community.ts`, `lib/queries/members.ts`, `lib/validation/community-post.ts`.
+- Prisma 마이그레이션 `20260619140000_spec007_community_post` — `CommunityPost` 모델 신규 생성(`content` 필드 사용, SPEC 권장 `body` 대신 실제 스키마 기준) + `(creator_profile_id, created_at)` 인덱스 + `CreatorProfile.communityPosts`·`User.communityPosts` 역관계(FK ON DELETE CASCADE). 추가형이라 기존 데이터 영향 없음.
+- 시드 데이터 — 커뮤니티 글 2개(권한 사용자 관점에서 보이도록)(NFR-003).
+
 ### Added — SPEC-006: 계약(약관) 및 Mock 결제
 
 - 계약 생성/조회 — `ACCEPTED` 신청 기반 `Contract` 지연 생성(lazy), `terms Json`에 `programTitle`·`priceKrw`·약관 스냅샷 저장, 동일 `applicationId` 재생성 방지.

@@ -13,9 +13,9 @@ last_synced_at: 2026-06-18T09:02:06Z
 > Prisma Migrate 기반. `prisma/schema.prisma`가 소스 오브 트루스이며,
 > `npx prisma migrate dev --name <name>`으로 마이그레이션을 생성합니다.
 >
-> **현재 상태**: `prisma/schema.prisma`의 12개 모델이 최초 마이그레이션 `init`으로
-> 생성되어 Supabase(ap-south-1) DB에 적용 완료되었습니다. 시드 데이터(`prisma/seed.ts`)도
-> 반영되었습니다.
+> **현재 상태**: `prisma/schema.prisma`의 13개 모델(12 + `CommunityPost`) 중 핵심 12개가
+> 최초 마이그레이션 `init`으로 Supabase(ap-south-1) DB에 적용 완료되었습니다.
+> 시드 데이터(`prisma/seed.ts`)도 반영되었습니다.
 > `moai-domain-db-docs` 훅이 `prisma/migrations/*/migration.sql` 변경을 감지하면
 > 아래 Applied Migrations 표를 자동으로 갱신합니다.
 >
@@ -46,6 +46,7 @@ last_synced_at: 2026-06-18T09:02:06Z
 | Filename | Created At | Description | Blocking? |
 |----------|-----------|-------------|-----------|
 | `20260618232057_add_app_status_and_notif_link/migration.sql` | 2026-06-18T23:20:57Z | SPEC-005 드리프트 수정 — `ProgramApplicationStatus` enum에 `AUTO_REJECTED`, `CANCELLED` 추가 + `notifications.link_url TEXT` 컬럼 추가. 신규 DB에서는 `init` 직후 순차 적용. 기존 DB에 값이 이미 존재할 경우 `migrate deploy`가 중복 에러를 낼 수 있으므로 상태 확인 후 적용. | No (추가형, 호환) |
+| `20260619140000_spec007_community_post/migration.sql` | 2026-06-19T14:00:00Z | SPEC-007 — `community_posts` 테이블 신규 생성(`id`, `creator_profile_id`, `author_id`, `title`, `content`, `created_at`, `updated_at`) + `(creator_profile_id, created_at)` 인덱스 + `creator_profiles`/`users` FK(ON DELETE CASCADE). 추가형이므로 기존 데이터 영향 없음. | No (추가형, 호환) |
 
 ---
 
