@@ -2,6 +2,9 @@
  * 팬 본인의 멤버십 목록 (SPEC-007 FR-011, AC-008).
  * 크리에이터명(studioName), 플랜명, 가입일을 표시한다.
  */
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
+
 interface MyMembershipRow {
   id: string;
   startedAt: Date | string;
@@ -19,9 +22,17 @@ interface MyMembershipsProps {
 export function MyMemberships({ memberships }: MyMembershipsProps) {
   if (memberships.length === 0) {
     return (
-      <p className="text-center text-sm text-muted-foreground py-8">
-        가입한 멤버십이 없습니다.
-      </p>
+      <div className="space-y-4 rounded-xl border border-dashed p-8 text-center">
+        <p className="text-sm text-muted-foreground">
+          가입한 멤버십이 없습니다. 관심 있는 작가의 멤버십을 둘러보세요.
+        </p>
+        <Link
+          href="/creators"
+          className={buttonVariants({ variant: "outline" })}
+        >
+          작가 둘러보기
+        </Link>
+      </div>
     );
   }
 

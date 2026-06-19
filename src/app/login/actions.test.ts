@@ -86,10 +86,12 @@ describe("loginAs", () => {
     );
   });
 
-  it("throws when no matching seed user exists", async () => {
+  it("returns an error state (no throw) when no matching seed user exists (F4)", async () => {
     mockFindMany.mockResolvedValue([]);
-    await expect(loginAs("CREATOR")).rejects.toThrow(/no seeded/i);
+    const result = await loginAs("CREATOR");
+    expect(result).toEqual({ error: expect.any(String) });
     expect(mockSetSession).not.toHaveBeenCalled();
+    expect(mockRedirect).not.toHaveBeenCalled();
   });
 });
 

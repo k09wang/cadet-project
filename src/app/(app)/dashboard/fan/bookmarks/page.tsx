@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { listMyBookmarks } from "@/lib/bookmarks";
 import { CreatorCard } from "@/components/creators/CreatorCard";
+import { buttonVariants } from "@/components/ui/button";
 
 /**
  * 팬 관심 작가(북마크) 페이지 (PRD §13.2).
@@ -25,9 +27,17 @@ export default async function MyBookmarksPage() {
       </header>
 
       {bookmarks.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          아직 관심 작가가 없습니다. 작가 스튜디오에서 &quot;관심 작가 추가&quot;를 눌러보세요.
-        </p>
+        <div className="space-y-4 rounded-xl border border-dashed p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            아직 관심 작가가 없습니다. 마음에 드는 작가를 찾아보세요.
+          </p>
+          <Link
+            href="/creators"
+            className={buttonVariants({ variant: "outline" })}
+          >
+            작가 둘러보기
+          </Link>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {bookmarks.map((creator) => (
