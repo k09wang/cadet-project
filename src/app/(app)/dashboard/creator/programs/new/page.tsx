@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createProgram } from "@/lib/programs";
 import { parseProgramCreateForm } from "@/lib/program-form";
 import { programCreateSchema } from "@/lib/validation/program";
-import { ProgramForm } from "@/components/dashboard/ProgramForm";
+import { NewProgramClient } from "@/components/dashboard/NewProgramClient";
 
 /**
  * 크리에이터 프로그램 생성 페이지 (SPEC-004 FR-001, AC-001, 7장 /dashboard/creator/programs/new).
@@ -41,7 +41,7 @@ export default async function NewProgramPage() {
   return (
     <main className="mx-auto max-w-2xl space-y-4">
       <h1 className="font-heading text-xl font-bold">새 클럽 만들기</h1>
-      <ProgramForm action={createProgramAction} mode="create" />
+      <NewProgramClient action={createProgramAction} />
     </main>
   );
 }
