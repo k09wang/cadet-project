@@ -35,9 +35,11 @@ export default async function ProgramsPage({ searchParams }: ProgramsPageProps) 
 
   return (
     <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="font-heading text-2xl font-bold tracking-tight">프로그램 탐색</h1>
-        <p className="text-sm text-muted-foreground">
+      <header className="space-y-2 rounded-[var(--radius-panel)] border border-border-default bg-white px-6 py-8 shadow-[var(--elevation-1)] sm:px-10 sm:py-10">
+        <h1 className="font-heading text-[28px] font-bold leading-9 tracking-tight text-text-default sm:text-[32px] sm:leading-10">
+          프로그램 탐색
+        </h1>
+        <p className="text-base leading-6 text-text-muted">
           크리에이터가 여는 클럽·챌린지·클래스를 만나보세요.
         </p>
       </header>
