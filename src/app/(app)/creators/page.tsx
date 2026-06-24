@@ -1,7 +1,9 @@
+import { Search } from "lucide-react";
 import { listCreators } from "@/lib/queries/studio";
 import { CreatorCard } from "@/components/creators/CreatorCard";
-import { ExploreHero } from "@/components/home/ExploreHero";
 import { SectionHeader } from "@/components/home/SectionHeader";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type CreatorsSearchParams = { q?: string; category?: string; tab?: string };
 
@@ -54,7 +56,36 @@ export default async function CreatorsPage({
 
   return (
     <div className="space-y-8">
-      <ExploreHero defaultQuery={query} />
+      <section className="rounded-[var(--radius-panel)] border border-border-default bg-white px-6 py-8 shadow-[var(--elevation-1)] sm:px-10 sm:py-10">
+        <div className="flex max-w-2xl flex-col gap-5">
+          <div className="space-y-2">
+            <h1 className="font-heading text-[28px] font-bold leading-9 text-text-default sm:text-[32px] sm:leading-10">
+              나만의 크리에이터를 찾아보세요
+            </h1>
+            <p className="text-base leading-6 text-text-muted">
+              다양한 분야의 크리에이터와 함께하는 특별한 경험
+            </p>
+          </div>
+          <form action="/creators" className="flex w-full flex-col gap-2 sm:flex-row">
+            <label className="relative min-w-0 flex-1">
+              <span className="sr-only">크리에이터, 프로그램 검색</span>
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+              <input
+                name="q"
+                defaultValue={query}
+                placeholder="크리에이터, 프로그램 검색..."
+                className="h-12 w-full rounded-lg border border-border-strong bg-white py-3 pl-10 pr-4 text-sm text-text-default outline-none transition focus-visible:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary/30"
+              />
+            </label>
+            <button
+              type="submit"
+              className={cn(buttonVariants({ variant: "default", size: "lg" }), "px-6")}
+            >
+              검색
+            </button>
+          </form>
+        </div>
+      </section>
       <section className="space-y-4">
         <SectionHeader
           title={entryTab === "artworks" ? "작품 구매 가능한 크리에이터" : "추천 크리에이터"}
