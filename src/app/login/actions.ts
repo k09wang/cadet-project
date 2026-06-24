@@ -48,8 +48,15 @@ export async function loginWithCredentials(
   redirect(roleHome(dbUser?.role));
 }
 
-/** Google OAuth 로그인 (provider 가 env 에 있을 때만 호출됨). */
+/**
+ * Google OAuth 로그인.
+ * 버튼은 항상 노출하되, provider env 가 없으면(주로 로컬 dev) 크래시 대신
+ * 안내 파라미터와 함께 /login 으로 되돌린다.
+ */
 export async function loginWithGoogle(): Promise<void> {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    redirect("/login?error=google_unconfigured");
+  }
   await signIn("google", { redirectTo: "/" });
 }
 

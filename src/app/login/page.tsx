@@ -14,7 +14,6 @@ export default async function LoginPage({
   searchParams: Promise<{ callbackUrl?: string }>;
 }) {
   const { callbackUrl } = await searchParams;
-  const googleEnabled = !!process.env.GOOGLE_CLIENT_ID;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface-canvas px-4 py-10">
@@ -32,17 +31,15 @@ export default async function LoginPage({
           <LoginForm action={loginWithCredentials} callbackUrl={callbackUrl} />
 
           <div className="space-y-3.5">
-            {googleEnabled ? (
-              <form action={loginWithGoogle}>
-                <button
-                  type="submit"
-                  className="flex h-[38px] w-full items-center justify-center gap-2 rounded border border-border-default bg-white px-4 py-2 text-[13px] font-bold leading-5 text-text-default transition-colors hover:border-border-strong hover:bg-surface-subtle"
-                >
-                  <span className="text-base font-bold text-brand-primary">G</span>
-                  구글 로그인
-                </button>
-              </form>
-            ) : null}
+            <form action={loginWithGoogle}>
+              <button
+                type="submit"
+                className="flex h-[38px] w-full items-center justify-center gap-2 rounded border border-border-default bg-white px-4 py-2 text-[13px] font-bold leading-5 text-text-default transition-colors hover:border-border-strong hover:bg-surface-subtle"
+              >
+                <span className="text-base font-bold text-brand-primary">G</span>
+                구글 로그인
+              </button>
+            </form>
 
             <p className="text-center text-[13px] leading-5 text-text-muted">
               계정이 없나요?{" "}
