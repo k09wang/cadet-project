@@ -670,3 +670,18 @@ Language: English
 Core Rule: MoAI is an orchestrator; direct implementation is prohibited
 
 For detailed patterns on plugins, sandboxing, headless mode, and version management, see Skill("moai-foundation-cc").
+
+---
+
+## 하네스: 풀스택 웹 개발 (artbridge)
+
+**목표:** 와이어프레임 → 디자인 → 프론트엔드 → 백엔드(API+Prisma) → QA(유닛+E2E) → Vercel 배포를 하나의 파이프라인으로 조율한다. 기존 MoAI/Vercel 에이전트를 재사용 우선으로 묶고, 1·5단계만 전용 에이전트를 둔다.
+
+**트리거:** 풀스택 기능/화면/페이지를 처음부터 끝까지 개발하거나 파이프라인을 재실행·수정·보완하는 요청 시 `fullstack-pipeline` 스킬을 사용하라. 단순 질문이나 단일 파일 수정은 직접 응답 가능.
+
+**구성:** 신규 에이전트 `wireframe-architect`(스킬 `wireframing`), `qa-integration`(스킬 `integration-qa`). 재사용: `expert-frontend`(디자인·프론트), `expert-backend`(API+Prisma), `expert-devops`+Vercel 스킬(배포). 핸드오프는 `_workspace/pipeline/`의 파일 계약으로 전달.
+
+**변경 이력:**
+| 날짜 | 변경 내용 | 대상 | 사유 |
+|------|----------|------|------|
+| 2026-06-19 | 초기 구성 | 전체 (agents/harness, skills/{wireframing,integration-qa,fullstack-pipeline}) | - |

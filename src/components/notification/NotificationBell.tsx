@@ -20,15 +20,15 @@ export async function NotificationBell() {
   return (
     <Link
       href="/notifications"
-      className="relative inline-flex items-center justify-center p-2 rounded-md hover:bg-muted transition-colors"
+      className="relative inline-flex size-10 items-center justify-center rounded-[var(--radius-control)] text-text-subtle transition-colors hover:bg-brand-subtle hover:text-brand-primary-pressed"
       aria-label={`알림${unreadCount > 0 ? ` (${unreadCount}개)` : ""}`}
     >
-      <Bell className="h-5 w-5" />
+      <Bell className="size-5" />
       {unreadCount > 0 && (
         <span
           className={cn(
             "absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full",
-            "bg-destructive text-[10px] font-medium text-destructive-foreground",
+            "bg-danger text-[10px] font-semibold text-white",
             unreadCount > 9 && "h-5 w-5 text-[9px]",
           )}
         >

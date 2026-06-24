@@ -12,16 +12,30 @@ import { BookmarkButton } from "@/components/studio/BookmarkButton";
 
 /**
  * 크리에이터 스튜디오 상세 페이지 (SPEC-002 FR-011, SPEC-003 FR-003, FR-006, AC-003,
- * SPEC-007 FR-001, FR-002, FR-003).
+ * SPEC-007 FR-001, FR-002, FR-003, SPEC-014 REQ-3-001).
  * isActiveMember + canAccessCommunity를 서버에서 계산하여 StudioTabs에 전달한다 (NFR-001, NFR-002).
  * joinAction Server Action을 클라이언트 컴포넌트에 prop으로 전달.
+ * ?tab=community 쿼리 파라미터로 초기 탭을 설정한다 (REQ-3-001).
  */
 export default async function CreatorDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ creatorId: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 }) {
-  const { creatorId } = await params;
+  const [{ creatorId }, resolvedSearch] = await Promise.all([
+    params,
+    searchParams ?? Promise.resolve({} as { tab?: string }),
+  ]);
+
+  // ?tab=community 쿼리 처리 (REQ-3-001)
+  const TAB_IDS = ["intro", "posts", "membership", "artworks", "club", "community"] as const;
+  type TabId = typeof TAB_IDS[number];
+  const tabParam = resolvedSearch?.tab;
+  const initialTab: TabId | undefined = TAB_IDS.includes(tabParam as TabId)
+    ? (tabParam as TabId)
+    : undefined;
   const [studio, currentUser] = await Promise.all([
     getCreatorStudio(creatorId),
     getCurrentUser(),
@@ -64,6 +78,7 @@ export default async function CreatorDetailPage({
       communityPosts={communityPosts}
       rating={rating}
       headerAction={headerAction}
+      initialTab={initialTab}
     />
   );
 }

@@ -20,7 +20,7 @@ export function listApplicationsForCreator(programId: string) {
 
 /**
  * 활성 신청 조회 (FR-002, AC-002).
- * PENDING 또는 ACCEPTED 상태의 신청만 활성으로 간주한다.
+ * 레거시 PENDING과 선착순 RESERVED/PENDING_PAYMENT/ACCEPTED 상태를 활성으로 간주한다.
  * 중복 신청/이미 신청 판정용으로 사용된다.
  */
 export function findActiveApplication(programId: string, userId: string) {
@@ -28,7 +28,10 @@ export function findActiveApplication(programId: string, userId: string) {
     where: {
       programId,
       userId,
-      status: { in: ["PENDING", "ACCEPTED"] },
+      status: { in: ["PENDING", "RESERVED", "PENDING_PAYMENT", "ACCEPTED"] },
+    },
+    include: {
+      payment: { select: { amount: true, status: true } },
     },
   });
 }
@@ -43,7 +46,18 @@ export function listMyApplications(userId: string) {
     where: { userId },
     orderBy: { updatedAt: "desc" },
     include: {
-      program: { select: { id: true, title: true, priceKrw: true, status: true } },
+      program: {
+        select: {
+          id: true,
+          title: true,
+          priceKrw: true,
+          status: true,
+          // 완료 후 리뷰 작성 여부 판별용(본인 작성 리뷰만).
+          reviews: { where: { userId }, select: { id: true }, take: 1 },
+        },
+      },
+      // 선착순 프로그램 결제 상태 계산용.
+      payment: { select: { status: true } },
     },
   });
 }

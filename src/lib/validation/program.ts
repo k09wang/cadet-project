@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 /**
- * 프로그램(클럽) 검증 스키마 (SPEC-004 FR-001, FR-006, NFR-003).
+ * 프로그램 검증 스키마 (SPEC-004 FR-001, FR-006, NFR-003).
  *
  * - 날짜 필드는 폼/JSON에서 문자열로 전달되므로 z.coerce.date()로 변환한다.
- * - 생성 시 status는 선택값이며 기본값은 라우트/서비스에서 RECRUITING을 적용한다.
+ * - status는 폼/API 입력으로 받지 않고 일정 기반으로 서비스에서 자동 계산한다.
  * - 수정 시 모든 필드가 선택값이고, nullable 필드는 null로 초기화할 수 있다.
  */
 export const PROGRAM_STATUSES = [
@@ -37,7 +37,6 @@ export const programCreateSchema = z.object({
   endDate: dateLike.optional(),
   recruitDeadline: dateLike.optional(),
   maxParticipants: z.number().int().positive().optional(),
-  status: z.enum(PROGRAM_STATUSES).optional(),
 });
 
 export const programUpdateSchema = z
@@ -50,7 +49,6 @@ export const programUpdateSchema = z
     endDate: nullableDate.optional(),
     recruitDeadline: nullableDate.optional(),
     maxParticipants: z.number().int().positive().nullable().optional(),
-    status: z.enum(PROGRAM_STATUSES).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "수정할 필드가 최소 하나 이상 필요합니다.",

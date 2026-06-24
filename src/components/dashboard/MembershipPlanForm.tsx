@@ -3,13 +3,27 @@
 import { Button } from "@/components/ui/button";
 
 /**
- * 멤버십 플랜 생성 폼 컴포넌트 (SPEC-003 FR-001).
+ * 멤버십 플랜 생성/수정 폼 컴포넌트 (SPEC-003 FR-001, SPEC-014 REQ-1-004, REQ-2-003).
+ * initial prop으로 기존 값 주입 가능 (수정 모드, AI 추천 주입 모두 지원).
  */
-interface MembershipPlanFormProps {
-  action: (formData: FormData) => void | Promise<void>;
+export interface MembershipPlanFormInitial {
+  title?: string;
+  priceKrw?: number;
+  description?: string;
 }
 
-export function MembershipPlanForm({ action }: MembershipPlanFormProps) {
+interface MembershipPlanFormProps {
+  action: (formData: FormData) => void | Promise<void>;
+  /** 초기값 주입 — 수정 모드 또는 AI 추천 반영 시 사용 */
+  initial?: MembershipPlanFormInitial;
+  submitLabel?: string;
+}
+
+export function MembershipPlanForm({
+  action,
+  initial,
+  submitLabel = "멤버십 플랜 생성",
+}: MembershipPlanFormProps) {
   return (
     <form action={action} className="space-y-4">
       <div>
@@ -19,6 +33,7 @@ export function MembershipPlanForm({ action }: MembershipPlanFormProps) {
           name="title"
           type="text"
           required
+          defaultValue={initial?.title ?? ""}
           className="w-full rounded border px-3 py-2 text-sm"
           placeholder="예: 브론즈 멤버십"
         />
@@ -32,6 +47,7 @@ export function MembershipPlanForm({ action }: MembershipPlanFormProps) {
           type="number"
           min={1}
           required
+          defaultValue={initial?.priceKrw ?? ""}
           className="w-full rounded border px-3 py-2 text-sm"
           placeholder="5000"
         />
@@ -43,12 +59,13 @@ export function MembershipPlanForm({ action }: MembershipPlanFormProps) {
           id="description"
           name="description"
           rows={3}
+          defaultValue={initial?.description ?? ""}
           className="w-full rounded border px-3 py-2 text-sm"
           placeholder="멤버십 혜택을 설명해주세요"
         />
       </div>
 
-      <Button type="submit">멤버십 플랜 생성</Button>
+      <Button type="submit">{submitLabel}</Button>
     </form>
   );
 }

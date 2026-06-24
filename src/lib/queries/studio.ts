@@ -14,12 +14,32 @@ export async function getCreatorStudio(id: string) {
   return prisma.creatorProfile.findUnique({
     where: { id },
     include: {
-      posts: { orderBy: { createdAt: "desc" } },
+      // 공개 스튜디오에는 발행(PUBLISHED) 포스트만 노출 — 임시저장(DRAFT) 제외.
+      posts: { where: { status: "PUBLISHED" }, orderBy: { createdAt: "desc" } },
       plans: true,
       programs: {
         where: { deletedAt: null, status: { in: PUBLIC_PROGRAM_STATUSES } },
         orderBy: { createdAt: "desc" },
       },
+      artworks: {
+        where: { status: "PUBLISHED", stock: { gt: 0 } },
+        orderBy: { createdAt: "desc" },
+      },
+      works: {
+        orderBy: [{ startedAt: "desc" }, { createdAt: "desc" }],
+      },
+    },
+  });
+}
+
+export function getMembershipPlanForCheckout(creatorProfileId: string, planId: string) {
+  return prisma.membershipPlan.findFirst({
+    where: {
+      id: planId,
+      creatorProfileId,
+    },
+    include: {
+      creatorProfile: { select: { id: true, studioName: true } },
     },
   });
 }
@@ -38,5 +58,52 @@ export async function listCreators() {
       profileImageUrl: true,
       category: true,
     },
+  });
+}
+
+/**
+ * 평점이 높은 크리에이터 상위 N명 (메인 홈 추천용).
+ * Review.revieweeId(=크리에이터 userId) 평균 평점 기준 정렬.
+ * 리뷰가 없으면 빈 배열을 반환한다.
+ */
+export async function listTopRatedCreators(limit = 3) {
+  const grouped = await prisma.review.groupBy({
+    by: ["revieweeId"],
+    where: { revieweeId: { not: null } },
+    _avg: { rating: true },
+    _count: { rating: true },
+    orderBy: { _avg: { rating: "desc" } },
+    take: limit,
+  });
+
+  const userIds = grouped
+    .map((g) => g.revieweeId)
+    .filter((id): id is string => Boolean(id));
+  if (userIds.length === 0) return [];
+
+  const profiles = await prisma.creatorProfile.findMany({
+    where: { userId: { in: userIds } },
+    select: {
+      id: true,
+      userId: true,
+      studioName: true,
+      bio: true,
+      profileImageUrl: true,
+      category: true,
+    },
+  });
+
+  // 평점 정렬 순서를 유지하며 평균 평점을 부착한다.
+  return grouped.flatMap((g) => {
+    const profile = profiles.find((p) => p.userId === g.revieweeId);
+    if (!profile) return [];
+    return [
+      {
+        ...profile,
+        avgRating:
+          g._avg.rating != null ? Math.round(g._avg.rating * 10) / 10 : null,
+        reviewCount: g._count.rating,
+      },
+    ];
   });
 }

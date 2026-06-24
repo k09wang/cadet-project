@@ -2,16 +2,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // --- Prisma mock ---
 const mockFindFirst = vi.fn();
+const mockFindUnique = vi.fn();
+const mockUpdate = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    membership: { findFirst: (...args: unknown[]) => mockFindFirst(...args) },
+    membership: {
+      findFirst: (...args: unknown[]) => mockFindFirst(...args),
+      findUnique: (...args: unknown[]) => mockFindUnique(...args),
+      update: (...args: unknown[]) => mockUpdate(...args),
+    },
   },
 }));
 
-import { isActiveMember } from "@/lib/membership";
+import { cancelMembership, isActiveMember } from "@/lib/membership";
 
 beforeEach(() => {
   mockFindFirst.mockReset();
+  mockFindUnique.mockReset();
+  mockUpdate.mockReset();
 });
 
 describe("isActiveMember (FR-007, AC-008)", () => {
@@ -23,6 +31,8 @@ describe("isActiveMember (FR-007, AC-008)", () => {
       where: {
         userId: "u-fan",
         plan: { creatorProfileId: "p-creator" },
+        status: "ACTIVE",
+        OR: [{ expiresAt: null }, { expiresAt: { gt: expect.any(Date) } }],
       },
     });
   });
@@ -38,5 +48,46 @@ describe("isActiveMember (FR-007, AC-008)", () => {
     mockFindFirst.mockResolvedValue(null);
     const result = await isActiveMember("u-fan", "p-other-creator");
     expect(result).toBe(false);
+  });
+});
+
+describe("cancelMembership", () => {
+  it("본인 ACTIVE 멤버십을 CANCELLED로 변경한다", async () => {
+    mockFindUnique.mockResolvedValue({ id: "mem-1", userId: "fan-1", status: "ACTIVE" });
+    mockUpdate.mockResolvedValue({
+      id: "mem-1",
+      status: "CANCELLED",
+      cancelledAt: new Date("2026-06-24T00:00:00Z"),
+    });
+
+    const result = await cancelMembership("fan-1", "mem-1");
+
+    expect(result.ok).toBe(true);
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "mem-1" },
+      data: {
+        status: "CANCELLED",
+        cancelledAt: expect.any(Date),
+      },
+      select: { id: true, status: true, cancelledAt: true },
+    });
+  });
+
+  it("타인 멤버십은 취소하지 않는다", async () => {
+    mockFindUnique.mockResolvedValue({ id: "mem-1", userId: "other", status: "ACTIVE" });
+
+    const result = await cancelMembership("fan-1", "mem-1");
+
+    expect(result).toEqual({ ok: false, status: 403, error: "Forbidden: not your membership" });
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("이미 취소된 멤버십은 400을 반환한다", async () => {
+    mockFindUnique.mockResolvedValue({ id: "mem-1", userId: "fan-1", status: "CANCELLED" });
+
+    const result = await cancelMembership("fan-1", "mem-1");
+
+    expect(result).toEqual({ ok: false, status: 400, error: "Membership is not active" });
+    expect(mockUpdate).not.toHaveBeenCalled();
   });
 });

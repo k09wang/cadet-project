@@ -1,7 +1,11 @@
 import type { ProgramReviewItem } from "@/lib/queries/reviews";
 
 /**
- * 프로그램 리뷰 목록 + 평균 평점 표시 (SPEC-008 FR-011, FR-012, AC-010, AC-012).
+ * 프로그램 리뷰 목록 + 평균 평점 표시
+ * (SPEC-008 FR-011, FR-012 + SPEC-013 양방향 평가).
+ *
+ * SPEC-013부터 리뷰는 양방향이다. reviewee 이름이 있으면 "작성자 → 피평가자"로 표시하고,
+ * 크리에이터가 받은 리뷰(일반 팬→크리에이터)와 크리에이터가 쓴 리뷰(크리에이터→팬)를 구분한다.
  * 리뷰가 없으면 "아직 리뷰가 없습니다"를 표시한다 (AC-012).
  */
 export function ReviewList({
@@ -30,7 +34,11 @@ export function ReviewList({
           {reviews.map((review) => (
             <li key={review.id} className="rounded-md border p-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">{review.user.name}</span>
+                <span className="text-sm font-medium">
+                  {review.reviewee
+                    ? `${review.user.name} → ${review.reviewee.name}`
+                    : review.user.name}
+                </span>
                 <span className="text-sm">{"★".repeat(review.rating)}</span>
               </div>
               {review.comment ? (

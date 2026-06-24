@@ -15,8 +15,13 @@ vi.mock("next/navigation", () => ({
 // Mock fetch
 global.fetch = vi.fn();
 
-describe("ApplyButton (FR-001, AC-001)", () => {
+// 동의 체크 후 '신청 제출' 클릭 (신청 제출 전 약관 동의가 필수).
+function submitForm() {
+  fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(screen.getByRole("button", { name: "신청 제출" }));
+}
 
+describe("ApplyButton (FR-001, AC-001)", () => {
   it("모집 중이 아닌 경우 null을 렌더링한다", () => {
     const { container } = render(
       <ApplyButton programId="prog1" applied={false} recruiting={false} owner={false} />,
@@ -31,16 +36,23 @@ describe("ApplyButton (FR-001, AC-001)", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("이미 신청한 경우 disabled '신청 완료' 버튼을 렌더링한다", () => {
+  it("이미 신청한 경우 신청 완료 안내를 렌더링한다", () => {
     render(<ApplyButton programId="prog1" applied={true} recruiting={true} owner={false} />);
-    const button = screen.getByRole("button", { name: "신청 완료" });
-    expect(button).toBeDisabled();
+    expect(screen.getByText("신청 완료")).toBeTruthy();
   });
 
   it("신청 가능한 경우 폼을 렌더링한다", () => {
     render(<ApplyButton programId="prog1" applied={false} recruiting={true} owner={false} />);
-    expect(screen.getByLabelText("메시지 (선택)")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "참여 신청" })).toBeTruthy();
+    expect(screen.getByLabelText("신청 메시지")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "신청 제출" })).toBeTruthy();
+  });
+
+  it("약관 미동의 시 동의 안내를 표시하고 제출하지 않는다", () => {
+    vi.clearAllMocks();
+    render(<ApplyButton programId="prog1" applied={false} recruiting={true} owner={false} />);
+    // 체크박스 없이 제출 버튼은 disabled
+    expect(screen.getByRole("button", { name: "신청 제출" })).toBeDisabled();
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it("폼 제출 성공 시 성공 메시지를 표시하고 router.refresh를 호출한다", async () => {
@@ -52,9 +64,7 @@ describe("ApplyButton (FR-001, AC-001)", () => {
     });
 
     render(<ApplyButton programId="prog1" applied={false} recruiting={true} owner={false} />);
-
-    const button = screen.getByRole("button", { name: "참여 신청" });
-    fireEvent.click(button);
+    submitForm();
 
     await waitFor(() => {
       expect(screen.getByText("신청이 완료되었습니다.")).toBeTruthy();
@@ -70,9 +80,7 @@ describe("ApplyButton (FR-001, AC-001)", () => {
     });
 
     render(<ApplyButton programId="prog1" applied={false} recruiting={true} owner={false} />);
-
-    const button = screen.getByRole("button", { name: "참여 신청" });
-    fireEvent.click(button);
+    submitForm();
 
     await waitFor(() => {
       expect(screen.getByText(/이미 신청했습니다/)).toBeTruthy();
@@ -87,12 +95,9 @@ describe("ApplyButton (FR-001, AC-001)", () => {
     });
 
     render(<ApplyButton programId="prog1" applied={false} recruiting={true} owner={false} />);
-
-    const button = screen.getByRole("button", { name: "참여 신청" });
-    fireEvent.click(button);
+    submitForm();
 
     await waitFor(() => {
-      // API에서 반환하는 에러 메시지가 있으면 표시, 없으면 기본 메시지
       expect(screen.queryByText(/Cannot apply to own program/)).toBeTruthy();
     });
   });
@@ -105,9 +110,7 @@ describe("ApplyButton (FR-001, AC-001)", () => {
     });
 
     render(<ApplyButton programId="prog1" applied={false} recruiting={true} owner={false} />);
-
-    const button = screen.getByRole("button", { name: "참여 신청" });
-    fireEvent.click(button);
+    submitForm();
 
     await waitFor(() => {
       expect(screen.getByText("로그인이 필요합니다.")).toBeTruthy();

@@ -5,10 +5,13 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { formatDate } from "@/lib/format";
+import { CancelMembershipButton } from "@/components/community/CancelMembershipButton";
 
 interface MyMembershipRow {
   id: string;
+  status?: string;
   startedAt: Date | string;
+  cancelledAt?: Date | string | null;
   plan: {
     id: string;
     title: string;
@@ -49,10 +52,19 @@ export function MyMemberships({ memberships }: MyMembershipsProps) {
               {membership.plan.creatorProfile.studioName}
             </p>
             <p className="text-sm text-muted-foreground">{membership.plan.title}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              상태: {membership.status === "CANCELLED" ? "취소됨" : "활성"}
+              {membership.cancelledAt ? ` · ${formatDate(membership.cancelledAt)} 취소` : ""}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground shrink-0">
-            {formatDate(membership.startedAt)} 가입
-          </p>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <p className="text-xs text-muted-foreground">
+              {formatDate(membership.startedAt)} 가입
+            </p>
+            {membership.status === "ACTIVE" || !membership.status ? (
+              <CancelMembershipButton membershipId={membership.id} />
+            ) : null}
+          </div>
         </li>
       ))}
     </ul>

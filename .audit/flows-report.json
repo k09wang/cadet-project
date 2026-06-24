@@ -1,0 +1,55 @@
+{
+  "startedAt": "2026-06-19T12:12:59.224Z",
+  "flows": [
+    {
+      "name": "fan-apply",
+      "candidates": [
+        "/programs/demo2-program-1",
+        "/programs/demo-program-completed",
+        "/programs/demo-program-1"
+      ],
+      "steps": [
+        {
+          "program": "/programs/demo-program-completed",
+          "applyVisible": false
+        },
+        {
+          "program": "/programs/demo-program-1",
+          "applyVisible": false
+        }
+      ],
+      "applied": false,
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "In HTML, %s cannot be a descendant of <%s>.\nThis will cause a hydration error.%s <form> form \n\n  ...\n    <ScrollAndMaybeFocusHandler cacheNode={{rsc:{...}, ...}}>\n      <InnerScrollAndFocusHandlerOld ",
+        "<%s> cannot contain a nested %s.\nSee this log for the ancestor stack trace. form <form>"
+      ]
+    },
+    {
+      "name": "fan-notif-after-apply",
+      "text": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 알림 전체 읽음 프로그램이 완료되었습니다. 리뷰를 작성해 보세요. 2026년 6월 19일 오후 07:55 프로그램 모집이 마감되었습니다. 2026년 6월 19일 오후 01:39 신청이 수락되었습니다. 2026년 6월 19일 오후 01:39",
+      "shot": "screenshots/flow-fan-notif-after.png"
+    },
+    {
+      "name": "creator-accept",
+      "appsLinks": [
+        "/dashboard/creator/programs/demo-program-completed/applications",
+        "/dashboard/creator/programs/demo-program-1/applications"
+      ],
+      "steps": [
+        {
+          "appsPage": "/dashboard/creator/programs/demo-program-completed/applications",
+          "acceptVisible": false,
+          "text": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 신청 관리 데모 완료 워크숍의 참여 신청 목록입니다. 아직 신청이 없습니다."
+        },
+        {
+          "appsPage": "/dashboard/creator/programs/demo-program-1/applications",
+          "acceptVisible": true,
+          "afterText": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 신청 관리 데모 클럽 프로그램의 참여 신청 목록입니다. 데모 팬 2 수락 2026년 6월 19일 오후 01:39 데모 팬 2 대기 중 2026년 6월 19일 오후 01:39 수락 거절 수락 시 다른 대기 신청 자동 거절 데모 팬 1 수락 2026년 6월 19일 오후 01:39",
+          "shot": "screenshots/flow-creator-accept-after.png"
+        }
+      ],
+      "accepted": true
+    }
+  ]
+}

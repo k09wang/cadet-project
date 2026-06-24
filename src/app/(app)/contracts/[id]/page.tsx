@@ -2,15 +2,15 @@ import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getContractDetail } from "@/lib/queries/contracts";
 import { ContractDetail } from "@/components/contracts/ContractDetail";
-import { AGREEMENT_TEXT } from "@/lib/contracts";
+import { AGREEMENT_TEXT, deriveAmountState } from "@/lib/contracts";
 
 const FEE_RATE = 0.1;
 
 /**
- * 계약 상세 페이지 (SPEC-006 FR-011, FR-012, AC-001, AC-006, AC-007).
+ * 계약 상세 페이지 (SPEC-006 + SPEC-011 금액 조율·양측 서명 + SPEC-012 PG 결제).
  *
  * 팬 본인 또는 크리에이터 소유자만 접근 가능. 그 외에는 404로 존재를 숨긴다.
- * 결제 완료 여부(PAID/RELEASED)와 서명 여부를 계산해 클라이언트 컴포넌트로 전달한다.
+ * 금액 조율 상태(terms 파생), 양측 서명 여부, 결제 완료 여부를 계산해 전달한다.
  */
 export default async function ContractPage({
   params,
@@ -38,9 +38,12 @@ export default async function ContractPage({
     notFound();
   }
 
-  const amount = contract.agreedAmount || contract.application.program.priceKrw;
-  const feeKrw = Math.round(amount * FEE_RATE);
-  const payout = amount - feeKrw;
+  const basePrice = contract.application.program.priceKrw;
+  const amountState = deriveAmountState(contract.terms);
+  // 표시 금액: 합의/제시 금액 우선, 없으면 원가
+  const displayAmount = contract.agreedAmount > 0 ? contract.agreedAmount : basePrice;
+  const feeKrw = Math.round(displayAmount * FEE_RATE);
+  const payout = displayAmount - feeKrw;
   const paid = contract.payments.some(
     (p) => p.status === "PAID" || p.status === "RELEASED",
   );
@@ -50,13 +53,16 @@ export default async function ContractPage({
       <ContractDetail
         contractId={contract.id}
         programTitle={contract.application.program.title}
-        amount={amount}
+        basePrice={basePrice}
+        proposedAmount={contract.agreedAmount}
         feeKrw={feeKrw}
         payout={payout}
         agreementText={AGREEMENT_TEXT}
         fanName={contract.application.user.name}
         creatorName={contract.application.program.creatorProfile.studioName}
-        signed={contract.fanSignedAt != null}
+        amountState={amountState}
+        fanSigned={contract.fanSignedAt != null}
+        creatorSigned={contract.creatorSignedAt != null}
         paid={paid}
         viewer={isFan ? "fan" : "creator"}
       />

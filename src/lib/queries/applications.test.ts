@@ -70,8 +70,9 @@ describe("queries/applications (FR-002, AC-002)", () => {
         where: {
           programId: "prog-1",
           userId: "u-1",
-          status: { in: ["PENDING", "ACCEPTED"] },
+          status: { in: ["PENDING", "RESERVED", "PENDING_PAYMENT", "ACCEPTED"] },
         },
+        include: { payment: { select: { amount: true, status: true } } },
       });
       expect(result).toEqual(mockApp);
     });
@@ -126,7 +127,16 @@ describe("queries/applications (FR-002, AC-002)", () => {
         where: { userId: "u-fan" },
         orderBy: { updatedAt: "desc" },
         include: {
-          program: { select: { id: true, title: true, priceKrw: true, status: true } },
+          program: {
+            select: {
+              id: true,
+              title: true,
+              priceKrw: true,
+              status: true,
+              reviews: { where: { userId: "u-fan" }, select: { id: true }, take: 1 },
+            },
+          },
+          payment: { select: { status: true } },
         },
       });
       expect(result).toEqual(mockApps);

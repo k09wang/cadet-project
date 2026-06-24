@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * 멤버십 플랜 카드 목록 (SPEC-002 FR-005, SPEC-003 FR-003, FR-006, AC-003).
@@ -17,35 +19,51 @@ export interface MembershipPlanCardListProps {
   }>;
   isActiveMember: boolean;
   joinAction?: (planId: string) => Promise<void>;
+  creatorProfileId?: string;
 }
 
 export function formatKrw(amount: number): string {
   return `₩${amount.toLocaleString("ko-KR")}`;
 }
 
-export function MembershipPlanCardList({ plans, isActiveMember, joinAction }: MembershipPlanCardListProps) {
+export function MembershipPlanCardList({
+  plans,
+  isActiveMember,
+  joinAction,
+  creatorProfileId,
+}: MembershipPlanCardListProps) {
   if (plans.length === 0) {
-    return <p className="text-sm text-muted-foreground">아직 멤버십 플랜이 없습니다.</p>;
+    return <p className="text-sm text-text-muted">아직 멤버십 플랜이 없습니다.</p>;
   }
   return (
-    <ul className="space-y-2">
+    <ul className="grid gap-3">
       {plans.map((plan) => (
         <li key={plan.id}>
           <Card>
             <CardHeader>
-              <CardTitle>{plan.title}</CardTitle>
+              <div className="flex items-start justify-between gap-3">
+                <CardTitle>{plan.title}</CardTitle>
+                <Badge variant="membership">멤버십</Badge>
+              </div>
             </CardHeader>
             {plan.description ? (
               <CardContent>
-                <p className="text-sm text-muted-foreground">{plan.description}</p>
+                <p className="text-sm leading-5 text-text-muted">{plan.description}</p>
               </CardContent>
             ) : null}
             <CardFooter className="flex items-center justify-between">
-              <span className="font-medium">{formatKrw(plan.priceKrw)}</span>
+              <span className="text-sm font-bold text-text-default">{formatKrw(plan.priceKrw)}</span>
               {isActiveMember ? (
                 <Button size="sm" disabled>
                   멤버십 가입 완료
                 </Button>
+              ) : creatorProfileId ? (
+                <Link
+                  href={`/creators/${creatorProfileId}/memberships/${plan.id}/checkout`}
+                  className={buttonVariants({ size: "sm" })}
+                >
+                  멤버십 가입하기
+                </Link>
               ) : joinAction ? (
                 <form action={joinAction.bind(null, plan.id)}>
                   <Button type="submit" size="sm">

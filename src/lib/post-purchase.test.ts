@@ -39,6 +39,7 @@ function postFixture(overrides: Record<string, unknown> = {}) {
     id: POST_ID,
     creatorProfileId: CREATOR_PROFILE_ID,
     visibility: "PAID",
+    status: "PUBLISHED",
     priceKrw: 5000,
     ...overrides,
   };
@@ -127,6 +128,14 @@ describe("purchasePost (FR-003, FR-004, FR-005, NFR-002, NFR-003)", () => {
     const result = await purchasePost(FAN_CTX, POST_ID);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.status).toBe(400);
+  });
+
+  it("DRAFT(임시저장) 포스트는 구매 불가 404", async () => {
+    mockPrisma.post.findUnique.mockResolvedValue(postFixture({ status: "DRAFT" }));
+    const result = await purchasePost(FAN_CTX, POST_ID);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.status).toBe(404);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 
   it("PAID 포스트가 아니면 400 (단건 구매 대상 아님)", async () => {

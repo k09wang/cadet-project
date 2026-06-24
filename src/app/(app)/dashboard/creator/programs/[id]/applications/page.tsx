@@ -5,11 +5,11 @@ import { listApplicationsForCreator } from "@/lib/queries/applications";
 import { ApplicationList } from "@/components/applications/ApplicationList";
 
 /**
- * 크리에이터 프로그램 신청 관리 페이지 (SPEC-005 FR-002, AC-003, AC-004).
+ * 크리에이터 프로그램 신청 멤버 관리 페이지.
  *
  * - CREATOR role만 접근 가능
  * - 본인 프로그램만 조회 가능
- * - 신청 목록을 표시하고 수락/거절 처리 가능
+ * - 선착순으로 확정된 신청 목록을 표시하고 멤버 제외 처리 가능
  */
 export default async function ApplicationsPage({
   params,

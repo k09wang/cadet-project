@@ -37,17 +37,17 @@ export default async function CreatorProgramsPage() {
   return (
     <div className="space-y-6">
       <header className="flex items-center justify-between gap-2">
-        <h1 className="font-heading text-2xl font-bold tracking-tight">내 클럽</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-tight">내 프로그램</h1>
         <Link
           href="/dashboard/creator/programs/new"
           className="rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted"
         >
-          새 클럽 만들기
+          새 프로그램 만들기
         </Link>
       </header>
 
       {programs.length === 0 ? (
-        <p className="text-sm text-muted-foreground">아직 만든 클럽이 없습니다.</p>
+        <p className="text-sm text-muted-foreground">아직 만든 프로그램이 없습니다.</p>
       ) : (
         <ul className="space-y-2">
           {programs.map((program) => (

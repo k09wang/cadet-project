@@ -43,6 +43,14 @@ describe("NotificationList (FR-014, AC-006)", () => {
       readAt: "2026-01-14T12:00:00Z",
       createdAt: "2026-01-14T10:00:00Z",
     },
+    {
+      id: "notif3",
+      type: "ARTWORK_SHIPPED",
+      message: "작품이 발송되었습니다.",
+      linkUrl: "/artwork-orders/order1",
+      readAt: null,
+      createdAt: "2026-01-16T10:00:00Z",
+    },
   ];
 
   it("빈 목록일 경우 안내 메시지를 렌더링한다", () => {
@@ -55,6 +63,25 @@ describe("NotificationList (FR-014, AC-006)", () => {
 
     expect(screen.getByText("새로운 신청이 도착했습니다.")).toBeTruthy();
     expect(screen.getByText("신청이 수락되었습니다.")).toBeTruthy();
+    expect(screen.getByText("작품이 발송되었습니다.")).toBeTruthy();
+  });
+
+  it("카테고리 필터로 알림을 좁힌다", () => {
+    render(<NotificationList notifications={mockNotifications} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "작품 1" }));
+
+    expect(screen.getByText("작품이 발송되었습니다.")).toBeTruthy();
+    expect(screen.queryByText("새로운 신청이 도착했습니다.")).toBeNull();
+    expect(screen.queryByText("신청이 수락되었습니다.")).toBeNull();
+  });
+
+  it("카테고리에 알림이 없으면 빈 상태를 렌더링한다", () => {
+    render(<NotificationList notifications={mockNotifications} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "정산 0" }));
+
+    expect(screen.getByText("이 카테고리 알림이 없습니다.")).toBeTruthy();
   });
 
   it("미읽음 알림은 하이라이트되고 표시한다", () => {

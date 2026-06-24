@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { StudioHeader } from "@/components/studio/StudioHeader";
+import { StudioProfileHeader } from "@/components/studio/StudioProfileHeader";
 import { PostCardList } from "@/components/studio/PostCardList";
 import { MembershipPlanCardList } from "@/components/studio/MembershipPlanCardList";
 import { ProgramCardList } from "@/components/studio/ProgramCardList";
+import { ArtworkCardList } from "@/components/studio/ArtworkCardList";
 import { CommunityPanel } from "@/components/community/CommunityPanel";
 import { CreatorRatingSummary } from "@/components/creators/CreatorRatingSummary";
 import type { PostVisibility } from "@prisma/client";
@@ -15,12 +16,13 @@ import type { PostVisibility } from "@prisma/client";
  * 5개 탭: 소개 / 포스트 / 멤버십 / 클럽 / 커뮤니티.
  * 커뮤니티 탭은 접근 권한에 따라 글 목록/작성 폼 또는 격벽 안내를 표시한다.
  */
-type TabId = "intro" | "posts" | "membership" | "club" | "community";
+type TabId = "intro" | "posts" | "membership" | "artworks" | "club" | "community";
 
 const TABS: Array<{ id: TabId; label: string }> = [
   { id: "intro", label: "소개" },
   { id: "posts", label: "포스트" },
   { id: "membership", label: "멤버십" },
+  { id: "artworks", label: "작품" },
   { id: "club", label: "클럽" },
   { id: "community", label: "커뮤니티" },
 ];
@@ -54,6 +56,23 @@ export interface StudioTabsProps {
       category?: string | null;
       priceKrw: number;
     }>;
+    artworks?: Array<{
+      id: string;
+      title: string;
+      description?: string | null;
+      imageUrl?: string | null;
+      priceKrw: number;
+      stock: number;
+    }>;
+    works?: Array<{
+      id: string;
+      title: string;
+      kind?: string | null;
+      description?: string | null;
+      imageUrl?: string | null;
+      startedAt?: Date | string | null;
+      endedAt?: Date | string | null;
+    }>;
   };
   /** 현재 로그인 사용자가 이 크리에이터의 활성 멤버인지 여부 (SPEC-003 FR-006, AC-003) */
   isActiveMember?: boolean;
@@ -75,6 +94,8 @@ export interface StudioTabsProps {
   rating?: { avg: number | null; count: number };
   /** 헤더 우측 액션 슬롯 (예: 관심 작가 북마크 버튼, PRD §13.2). */
   headerAction?: ReactNode;
+  /** URL 쿼리(?tab=community)에 의한 초기 활성 탭 (SPEC-014 REQ-3-001). */
+  initialTab?: TabId;
 }
 
 export function StudioTabs({
@@ -86,14 +107,21 @@ export function StudioTabs({
   communityPosts = [],
   rating,
   headerAction,
+  initialTab,
 }: StudioTabsProps) {
-  const [active, setActive] = useState<TabId>("intro");
+  const [active, setActive] = useState<TabId>(initialTab ?? "intro");
+  const works = studio.works ?? [];
 
   return (
     <div className="space-y-4">
-      <StudioHeader studio={studio} action={headerAction} />
+      <StudioProfileHeader
+        studio={studio}
+        isActiveMember={isActiveMember}
+        rating={rating}
+        action={headerAction}
+      />
 
-      <nav className="flex gap-2 border-b" role="tablist">
+      <nav className="flex gap-2 overflow-x-auto border-b border-border-default" role="tablist">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -101,9 +129,9 @@ export function StudioTabs({
             aria-selected={active === t.id}
             onClick={() => setActive(t.id)}
             className={
-              "border-b-2 px-3 py-2 text-sm transition-colors " +
+              "shrink-0 border-b-2 px-3 py-2 text-sm font-medium transition-colors " +
               (active === t.id
-                ? "border-primary text-primary"
+                ? "border-brand-primary text-brand-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground")
             }
           >
@@ -114,7 +142,7 @@ export function StudioTabs({
 
       <section>
         {active === "intro" ? (
-          <div className="space-y-2">
+          <div className="space-y-4">
             <p className="text-sm text-muted-foreground">{studio.bio ?? "작가 소개가 없습니다."}</p>
             {rating ? (
               <CreatorRatingSummary
@@ -123,11 +151,68 @@ export function StudioTabs({
                 count={rating.count}
               />
             ) : null}
+            {works.length > 0 ? (
+              <div className="space-y-3">
+                <div>
+                  <h2 className="font-heading text-base font-semibold text-text-default">작업 이력</h2>
+                  <p className="mt-1 text-sm text-text-muted">
+                    작가가 지나온 전시, 프로젝트, 작업 과정을 이미지와 기간 중심으로 살펴보세요.
+                  </p>
+                </div>
+                <ul className="grid gap-3">
+                  {works.map((work) => (
+                    <li
+                      key={work.id}
+                      className="grid gap-3 rounded-[var(--radius-card)] border border-border-default bg-white p-3 sm:grid-cols-[132px_1fr]"
+                    >
+                      {work.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={work.imageUrl}
+                          alt={work.title}
+                          className="aspect-[4/3] w-full rounded-[var(--radius-control)] object-cover sm:h-full"
+                        />
+                      ) : (
+                        <div className="flex aspect-[4/3] w-full items-center justify-center rounded-[var(--radius-control)] bg-brand-subtle text-sm font-semibold text-brand-primary sm:h-full">
+                          작업 이미지
+                        </div>
+                      )}
+                      <div className="min-w-0 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-neutral-100 px-2 py-1 text-xs font-medium text-text-muted">
+                            {work.kind ?? "작업"}
+                          </span>
+                          <span className="text-xs text-text-muted">
+                            {formatWorkPeriod(work.startedAt, work.endedAt)}
+                          </span>
+                        </div>
+                        <p className="font-medium text-text-default">{work.title}</p>
+                        {work.description ? (
+                          <p className="line-clamp-3 text-sm leading-6 text-text-muted">{work.description}</p>
+                        ) : (
+                          <p className="text-sm text-text-muted">아직 소개가 등록되지 않았습니다.</p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
         ) : null}
         {active === "posts" ? <PostCardList posts={studio.posts ?? []} /> : null}
         {active === "membership" ? (
-          <MembershipPlanCardList plans={studio.plans ?? []} isActiveMember={isActiveMember} joinAction={joinAction} />
+          <MembershipPlanCardList
+            plans={studio.plans ?? []}
+            isActiveMember={isActiveMember}
+            joinAction={joinAction}
+            creatorProfileId={creatorProfileId}
+          />
+        ) : null}
+        {active === "artworks" ? (
+          <ArtworkCardList
+            artworks={studio.artworks ?? []}
+          />
         ) : null}
         {active === "club" ? <ProgramCardList programs={studio.programs ?? []} /> : null}
         {active === "community" ? (
@@ -140,4 +225,23 @@ export function StudioTabs({
       </section>
     </div>
   );
+}
+
+function formatWorkPeriod(startedAt?: Date | string | null, endedAt?: Date | string | null) {
+  const start = formatWorkDate(startedAt);
+  const end = formatWorkDate(endedAt);
+  if (start && end) return `${start} - ${end}`;
+  if (start) return `${start} 시작`;
+  if (end) return `${end} 종료`;
+  return "기간 미등록";
+}
+
+function formatWorkDate(value?: Date | string | null) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "short",
+  }).format(date);
 }

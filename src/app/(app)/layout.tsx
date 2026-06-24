@@ -1,4 +1,5 @@
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 
 /**
  * Layout for authenticated app routes (dashboard, creators, notifications, …).
@@ -12,9 +13,10 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Header />
-      <div className="mx-auto max-w-5xl px-4 py-6">{children}</div>
+      <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</div>
+      <Footer />
     </div>
   );
 }

@@ -7,7 +7,7 @@ describe("isParticipantPaid (AC-007)", () => {
       isParticipantPaid({
         id: "a-1",
         user: { id: "u-1", name: "팬" },
-        contract: { payments: [{ status: "PAID" }] },
+        payment: { status: "PAID" },
       }),
     ).toBe(true);
   });
@@ -17,7 +17,7 @@ describe("isParticipantPaid (AC-007)", () => {
       isParticipantPaid({
         id: "a-1",
         user: { id: "u-1", name: "팬" },
-        contract: { payments: [{ status: "RELEASED" }] },
+        payment: { status: "RELEASED" },
       }),
     ).toBe(true);
   });
@@ -27,27 +27,17 @@ describe("isParticipantPaid (AC-007)", () => {
       isParticipantPaid({
         id: "a-1",
         user: { id: "u-1", name: "팬" },
-        contract: { payments: [{ status: "PENDING" }] },
+        payment: { status: "PENDING" },
       }),
     ).toBe(false);
   });
 
-  it("contract가 없으면 false를 반환한다", () => {
+  it("payment가 없으면 false를 반환한다", () => {
     expect(
       isParticipantPaid({
         id: "a-1",
         user: { id: "u-1", name: "팬" },
-        contract: null,
-      }),
-    ).toBe(false);
-  });
-
-  it("결제 내역이 비어 있으면 false를 반환한다", () => {
-    expect(
-      isParticipantPaid({
-        id: "a-1",
-        user: { id: "u-1", name: "팬" },
-        contract: { payments: [] },
+        payment: null,
       }),
     ).toBe(false);
   });

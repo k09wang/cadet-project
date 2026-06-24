@@ -54,7 +54,7 @@ describe("GET /api/programs/:id (FR-004, FR-011, AC-007)", () => {
 describe("PATCH /api/programs/:id (FR-006, FR-007, AC-005, AC-009, AC-010)", () => {
   it("비로그인 401", async () => {
     mockGetCurrentUser.mockResolvedValue(null);
-    const res = await PATCH(patchReq({ status: "CLOSED" }), ctx("p1"));
+    const res = await PATCH(patchReq({ title: "수정" }), ctx("p1"));
     expect(res.status).toBe(401);
   });
 
@@ -65,29 +65,36 @@ describe("PATCH /api/programs/:id (FR-006, FR-007, AC-005, AC-009, AC-010)", () 
     expect(mockUpdateProgram).not.toHaveBeenCalled();
   });
 
-  it("서비스가 400(미허용 전이)을 반환하면 400 (AC-009)", async () => {
+  it("status 단독 변경 요청은 검증 실패로 400", async () => {
     mockGetCurrentUser.mockResolvedValue(CREATOR);
-    mockUpdateProgram.mockResolvedValue({ ok: false, status: 400, error: "Invalid status transition" });
     const res = await PATCH(patchReq({ status: "RECRUITING" }), ctx("p1"));
+    expect(res.status).toBe(400);
+    expect(mockUpdateProgram).not.toHaveBeenCalled();
+  });
+
+  it("서비스가 400을 반환하면 400", async () => {
+    mockGetCurrentUser.mockResolvedValue(CREATOR);
+    mockUpdateProgram.mockResolvedValue({ ok: false, status: 400, error: "Invalid input" });
+    const res = await PATCH(patchReq({ title: "수정" }), ctx("p1"));
     expect(res.status).toBe(400);
   });
 
   it("서비스가 403(타인)을 반환하면 403 (AC-010)", async () => {
     mockGetCurrentUser.mockResolvedValue(CREATOR);
     mockUpdateProgram.mockResolvedValue({ ok: false, status: 403, error: "not owner" });
-    const res = await PATCH(patchReq({ status: "CLOSED" }), ctx("p1"));
+    const res = await PATCH(patchReq({ title: "수정" }), ctx("p1"));
     expect(res.status).toBe(403);
   });
 
   it("정상 갱신 시 200 (AC-005)", async () => {
     mockGetCurrentUser.mockResolvedValue(CREATOR);
-    mockUpdateProgram.mockResolvedValue({ ok: true, data: { id: "p1", status: "CLOSED" } });
-    const res = await PATCH(patchReq({ status: "CLOSED" }), ctx("p1"));
+    mockUpdateProgram.mockResolvedValue({ ok: true, data: { id: "p1", title: "수정" } });
+    const res = await PATCH(patchReq({ title: "수정" }), ctx("p1"));
     expect(res.status).toBe(200);
     expect(mockUpdateProgram).toHaveBeenCalledWith(
       { role: "CREATOR", creatorProfileId: "p-A" },
       "p1",
-      { status: "CLOSED" },
+      { title: "수정" },
     );
   });
 });

@@ -15,6 +15,15 @@ const { mockPrisma } = vi.hoisted(() => ({
       create: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),
+      count: vi.fn(),
+    },
+    payment: {
+      create: vi.fn(),
+      update: vi.fn(),
+    },
+    settlement: {
+      create: vi.fn(),
+      update: vi.fn(),
     },
     creatorProfile: {
       findUnique: vi.fn(),
@@ -33,9 +42,22 @@ vi.mock("@/lib/queries/applications", () => ({
   findActiveApplication: (...a: unknown[]) => mockFindActiveApplication(...a),
 }));
 
+const { mockProvider } = vi.hoisted(() => ({
+  mockProvider: {
+    name: "mock",
+    createRequest: vi.fn(),
+    charge: vi.fn(),
+  },
+}));
+vi.mock("@/lib/payment/provider", () => ({
+  resolvePaymentProvider: () => mockProvider,
+}));
+
 import {
   applyToProgram,
+  cancelProgramApplication,
   processApplication,
+  removeProgramParticipant,
   notifyProgramClosed,
   type ApplicationServiceContext,
 } from "./applications";
@@ -56,6 +78,20 @@ describe("lib/applications (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012)", () 
     mockPrisma.$transaction.mockImplementation(async (cb) => {
       return cb(mockPrisma);
     });
+    mockPrisma.programApplication.count.mockResolvedValue(0);
+    mockProvider.createRequest.mockReturnValue({
+      merchantUid: "order-app-1",
+      amount: 30000,
+      productName: "program",
+      provider: "mock",
+      paymentParams: {},
+    });
+    mockProvider.charge.mockResolvedValue({
+      success: true,
+      provider: "mock",
+      providerTxId: "mock-app-1",
+      amount: 30000,
+    });
   });
   afterEach(() => vi.clearAllMocks());
 
@@ -68,7 +104,10 @@ describe("lib/applications (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012)", () 
         status: "RECRUITING",
         recruitDeadline: new Date(Date.now() + 86400000),
         creatorProfileId: "cp-other",
+        priceKrw: 0,
+        maxParticipants: 5,
         deletedAt: null,
+        creatorProfile: { userId: "creator-user" },
       };
       mockPrisma.program.findUnique.mockResolvedValue(program);
       mockFindActiveApplication.mockResolvedValue(null);
@@ -87,7 +126,10 @@ describe("lib/applications (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012)", () 
         status: "RECRUITING",
         recruitDeadline: new Date(Date.now() + 86400000),
         creatorProfileId: "cp-2",
+        priceKrw: 0,
+        maxParticipants: 5,
         deletedAt: null,
+        creatorProfile: { userId: "creator-user" },
       };
       mockPrisma.program.findUnique.mockResolvedValue(program);
       mockFindActiveApplication.mockResolvedValue(null);
@@ -102,7 +144,7 @@ describe("lib/applications (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012)", () 
         data: expect.objectContaining({
           programId: "prog-1",
           userId: "fan-user",
-          status: "PENDING",
+          status: "ACCEPTED",
           message: "message",
         }),
       });
@@ -133,7 +175,10 @@ describe("lib/applications (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012)", () 
         status: "RECRUITING",
         recruitDeadline: new Date(Date.now() + 86400000),
         creatorProfileId: "cp-1",
+        priceKrw: 0,
+        maxParticipants: 5,
         deletedAt: null,
+        creatorProfile: { userId: "creator-user" },
       };
       mockPrisma.program.findUnique.mockResolvedValue(program);
 
@@ -153,7 +198,10 @@ describe("lib/applications (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012)", () 
         status: "CLOSED",
         recruitDeadline: new Date(Date.now() + 86400000),
         creatorProfileId: "cp-2",
+        priceKrw: 0,
+        maxParticipants: 5,
         deletedAt: null,
+        creatorProfile: { userId: "creator-user" },
       };
       mockPrisma.program.findUnique.mockResolvedValue(program);
 
@@ -168,7 +216,10 @@ describe("lib/applications (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012)", () 
         status: "RECRUITING",
         recruitDeadline: new Date(Date.now() - 1000),
         creatorProfileId: "cp-2",
+        priceKrw: 0,
+        maxParticipants: 5,
         deletedAt: null,
+        creatorProfile: { userId: "creator-user" },
       };
       mockPrisma.program.findUnique.mockResolvedValue(program);
 
@@ -183,7 +234,10 @@ describe("lib/applications (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012)", () 
         status: "RECRUITING",
         recruitDeadline: new Date(Date.now() + 86400000),
         creatorProfileId: "cp-2",
+        priceKrw: 0,
+        maxParticipants: 5,
         deletedAt: null,
+        creatorProfile: { userId: "creator-user" },
       };
       mockPrisma.program.findUnique.mockResolvedValue(program);
       mockFindActiveApplication.mockResolvedValue({ id: "app-1" });
@@ -199,7 +253,10 @@ describe("lib/applications (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012)", () 
         status: "RECRUITING",
         recruitDeadline: new Date(Date.now() + 86400000),
         creatorProfileId: "cp-2",
+        priceKrw: 0,
+        maxParticipants: 5,
         deletedAt: null,
+        creatorProfile: { userId: "creator-user" },
       };
       mockPrisma.program.findUnique.mockResolvedValue(program);
       mockFindActiveApplication.mockResolvedValue(null);
@@ -211,14 +268,133 @@ describe("lib/applications (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012)", () 
 
       expect(result.ok).toBe(true);
       expect(mockPrisma.programApplication.create).toHaveBeenCalled();
-      expect(mockPrisma.creatorProfile.findUnique).toHaveBeenCalledWith({
-        where: { id: "cp-2" },
-        select: { userId: true },
-      });
+      expect(mockPrisma.creatorProfile.findUnique).not.toHaveBeenCalled();
       expect(mockPrisma.notification.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           userId: "creator-user",
           type: "APPLICATION_CREATED",
+        }),
+      });
+    });
+
+    it("유료 프로그램은 mock 결제 성공 시 즉시 ACCEPTED, Payment, Settlement를 생성한다 (SPEC-015 REQ-PROG-002)", async () => {
+      const program = {
+        id: "prog-1",
+        title: "유료 워크숍",
+        status: "RECRUITING",
+        recruitDeadline: new Date(Date.now() + 86400000),
+        creatorProfileId: "cp-2",
+        priceKrw: 30000,
+        maxParticipants: 3,
+        deletedAt: null,
+        creatorProfile: { userId: "creator-user" },
+      };
+      mockPrisma.program.findUnique.mockResolvedValue(program);
+      mockFindActiveApplication.mockResolvedValue(null);
+      mockPrisma.programApplication.create.mockResolvedValue({ id: "app-1", status: "PENDING_PAYMENT" });
+      mockPrisma.programApplication.update.mockResolvedValue({ id: "app-1", status: "ACCEPTED" });
+      mockPrisma.payment.create.mockResolvedValue({ id: "pay-1" });
+      mockPrisma.settlement.create.mockResolvedValue({ id: "set-1" });
+      mockPrisma.notification.create.mockResolvedValue({ id: "notif-1" });
+
+      const result = await applyToProgram(FAN_CTX, "prog-1", "fan-user", "message");
+
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.data.status).toBe("ACCEPTED");
+        expect(result.data.paymentId).toBe("pay-1");
+        expect(result.data.settlementId).toBe("set-1");
+      }
+      expect(mockPrisma.programApplication.count).toHaveBeenCalled();
+      expect(mockPrisma.payment.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          programApplicationId: "app-1",
+          fanUserId: "fan-user",
+          amount: 30000,
+          feeKrw: 3000,
+          status: "PAID",
+        }),
+      });
+      expect(mockPrisma.settlement.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          sourceType: "PROGRAM",
+          sourceId: "prog-1",
+          grossAmount: 30000,
+          feeKrw: 3000,
+          payout: 27000,
+        }),
+      });
+    });
+
+    it("정원이 찬 프로그램은 409를 반환한다 (SPEC-015 REQ-PROG-001)", async () => {
+      mockPrisma.program.findUnique.mockResolvedValue({
+        id: "prog-1",
+        title: "소수 워크숍",
+        status: "RECRUITING",
+        recruitDeadline: new Date(Date.now() + 86400000),
+        creatorProfileId: "cp-2",
+        priceKrw: 0,
+        maxParticipants: 1,
+        deletedAt: null,
+        creatorProfile: { userId: "creator-user" },
+      });
+      mockFindActiveApplication.mockResolvedValue(null);
+      mockPrisma.programApplication.count.mockResolvedValue(1);
+
+      const result = await applyToProgram(FAN_CTX, "prog-1", "fan-user");
+
+      expect(result).toEqual({ ok: false, status: 409, error: "Program is full" });
+      expect(mockPrisma.programApplication.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("cancelProgramApplication / removeProgramParticipant (SPEC-015)", () => {
+    it("팬은 본인 신청을 CANCELLED로 바꾸고 결제/정산을 보류 처리한다", async () => {
+      mockPrisma.programApplication.findUnique.mockResolvedValue({
+        id: "app-1",
+        userId: "fan-1",
+        programId: "prog-1",
+        status: "ACCEPTED",
+        payment: {
+          id: "pay-1",
+          status: "PAID",
+          settlement: { id: "set-1" },
+        },
+      });
+      mockPrisma.programApplication.update.mockResolvedValue({ id: "app-1", status: "CANCELLED" });
+
+      const result = await cancelProgramApplication("app-1", "fan-1");
+
+      expect(result.ok).toBe(true);
+      expect(mockPrisma.payment.update).toHaveBeenCalledWith({
+        where: { id: "pay-1" },
+        data: { status: "REFUNDED" },
+      });
+      expect(mockPrisma.settlement.update).toHaveBeenCalledWith({
+        where: { id: "set-1" },
+        data: expect.objectContaining({ status: "ON_HOLD" }),
+      });
+    });
+
+    it("크리에이터는 확정 참여자를 REMOVED로 제외할 수 있다", async () => {
+      mockPrisma.programApplication.findUnique.mockResolvedValue({
+        id: "app-1",
+        userId: "fan-1",
+        programId: "prog-1",
+        status: "ACCEPTED",
+        program: { creatorProfileId: "cp-1" },
+        payment: null,
+      });
+      mockPrisma.programApplication.update.mockResolvedValue({ id: "app-1", status: "REMOVED" });
+
+      const result = await removeProgramParticipant(CREATOR_CTX, "app-1", "운영 사유");
+
+      expect(result.ok).toBe(true);
+      expect(mockPrisma.programApplication.update).toHaveBeenCalledWith({
+        where: { id: "app-1" },
+        data: expect.objectContaining({
+          status: "REMOVED",
+          removedReason: "운영 사유",
         }),
       });
     });

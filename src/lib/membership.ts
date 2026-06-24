@@ -15,7 +15,46 @@ export async function isActiveMember(
     where: {
       userId,
       plan: { creatorProfileId },
+      status: "ACTIVE",
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
     },
   });
   return membership !== null;
+}
+
+export type MembershipServiceResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; status: 400 | 403 | 404 | 500; error: string };
+
+export async function cancelMembership(
+  userId: string,
+  membershipId: string,
+): Promise<MembershipServiceResult<{ id: string; status: string; cancelledAt: Date | null }>> {
+  const membership = await prisma.membership.findUnique({
+    where: { id: membershipId },
+    select: { id: true, userId: true, status: true },
+  });
+  if (!membership) {
+    return { ok: false, status: 404, error: "Membership not found" };
+  }
+  if (membership.userId !== userId) {
+    return { ok: false, status: 403, error: "Forbidden: not your membership" };
+  }
+  if (membership.status !== "ACTIVE") {
+    return { ok: false, status: 400, error: "Membership is not active" };
+  }
+
+  try {
+    const cancelled = await prisma.membership.update({
+      where: { id: membershipId },
+      data: {
+        status: "CANCELLED",
+        cancelledAt: new Date(),
+      },
+      select: { id: true, status: true, cancelledAt: true },
+    });
+    return { ok: true, data: cancelled };
+  } catch {
+    return { ok: false, status: 500, error: "Membership cancellation failed" };
+  }
 }

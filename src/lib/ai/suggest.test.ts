@@ -4,6 +4,9 @@ import {
   suggestProgram,
   suggestWithOpenAI,
   suggestionSchema,
+  suggestMembershipMock,
+  suggestMembership,
+  membershipSuggestionSchema,
 } from "@/lib/ai/suggest";
 
 const SAMPLE_INPUT = {
@@ -182,5 +185,75 @@ describe("suggestProgram (FR-004, AC-004, AC-008)", () => {
     const out = await suggestProgram(SAMPLE_INPUT, { fetchImpl: fetchMock });
     expect(out.source).toBe("openai");
     expect(out.suggestedPrice).toBe(50000);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 멤버십 AI 추천 (SPEC-014 REQ-2-001)
+// ─────────────────────────────────────────────────────────────────────────────
+const MEMBERSHIP_INPUT = {
+  description: "일러스트 팬을 위한 월 구독 멤버십",
+  category: "일러스트",
+  targetAudience: "팬",
+};
+
+describe("membershipSuggestionSchema (REQ-2-001)", () => {
+  it("주차 구성 없이 가격+혜택+사유만 포함한다", () => {
+    const parsed = membershipSuggestionSchema.safeParse({
+      suggestedPrice: 9000,
+      benefits: ["전용 커뮤니티"],
+      reason: "팬 맞춤 추천",
+    });
+    expect(parsed.success).toBe(true);
+  });
+
+  it("programStructure 필드를 허용하지 않는다(additionalProperties: false 아님이므로 통과, 주차 구성 미포함 확인)", () => {
+    // suggestMembershipMock 결과에 programStructure가 없음을 확인
+    const result = suggestMembershipMock(MEMBERSHIP_INPUT);
+    expect(result).not.toHaveProperty("programStructure");
+  });
+});
+
+describe("suggestMembershipMock (REQ-2-001, NFR-002)", () => {
+  it("스키마에 맞는 결과를 반환한다", () => {
+    const out = suggestMembershipMock(MEMBERSHIP_INPUT);
+    expect(membershipSuggestionSchema.safeParse(out).success).toBe(true);
+  });
+
+  it("동일 입력에 동일 결과를 반환한다 (결정론적)", () => {
+    const a = suggestMembershipMock(MEMBERSHIP_INPUT);
+    const b = suggestMembershipMock(MEMBERSHIP_INPUT);
+    expect(a).toEqual(b);
+  });
+
+  it("주차 구성(programStructure)이 포함되지 않는다 (REQ-2-001)", () => {
+    const out = suggestMembershipMock(MEMBERSHIP_INPUT);
+    expect(out).not.toHaveProperty("programStructure");
+  });
+});
+
+describe("suggestMembership (REQ-2-001, REQ-2-005, NFR-002)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("API 키 없으면 Mock 폴백(source=mock)", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "");
+    const out = await suggestMembership(MEMBERSHIP_INPUT);
+    expect(out.source).toBe("mock");
+    expect(membershipSuggestionSchema.safeParse(out).success).toBe(true);
+  });
+
+  it("OpenAI 실패 시 Mock 폴백(source=mock) — 예외 미전파 (REQ-2-005)", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    const failingFetch = vi.fn().mockRejectedValue(new Error("network down")) as unknown as typeof fetch;
+    const out = await suggestMembership(MEMBERSHIP_INPUT, { fetchImpl: failingFetch });
+    expect(out.source).toBe("mock");
+  });
+
+  it("결과에 주차 구성이 포함되지 않는다 (REQ-2-001)", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "");
+    const out = await suggestMembership(MEMBERSHIP_INPUT);
+    expect(out).not.toHaveProperty("programStructure");
   });
 });

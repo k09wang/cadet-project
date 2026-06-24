@@ -27,8 +27,13 @@ describe("lib/validation/contract (SPEC-006)", () => {
       expect(paymentSchema.safeParse({ provider: "mock" }).success).toBe(true);
     });
 
+    it("portone/toss provider도 통과한다 (SPEC-012)", () => {
+      expect(paymentSchema.safeParse({ provider: "portone" }).success).toBe(true);
+      expect(paymentSchema.safeParse({ provider: "toss" }).success).toBe(true);
+    });
+
     it("알 수 없는 provider는 거부한다", () => {
-      expect(paymentSchema.safeParse({ provider: "toss" }).success).toBe(false);
+      expect(paymentSchema.safeParse({ provider: "card" }).success).toBe(false);
     });
   });
 

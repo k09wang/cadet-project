@@ -30,9 +30,22 @@ const { mockPrisma } = vi.hoisted(() => ({
 vi.mock("@/lib/prisma", () => ({ prisma: mockPrisma }));
 
 const mockCharge = vi.fn();
-vi.mock("@/lib/payment/provider", () => ({
-  mockPaymentProvider: { name: "mock", charge: (...a: unknown[]) => mockCharge(...a) },
-}));
+const mockCreateRequest = vi.fn();
+const mockVerifyPayment = vi.fn();
+vi.mock("@/lib/payment/provider", () => {
+  const provider = {
+    name: "mock",
+    charge: (...a: unknown[]) => mockCharge(...a),
+    createRequest: (...a: unknown[]) => mockCreateRequest(...a),
+    verifyPayment: (...a: unknown[]) => mockVerifyPayment(...a),
+  };
+  return {
+    mockPaymentProvider: provider,
+    resolvePaymentProvider: () => provider,
+    issueMerchantUid: (s: string) => `order_${s}_1`,
+    __resetPaymentProviderCache: () => {},
+  };
+});
 
 import {
   getOrCreateContract,
@@ -103,6 +116,15 @@ beforeEach(() => {
   });
   mockCharge.mockReset();
   mockCharge.mockResolvedValue({ success: true, provider: "mock", providerTxId: "tx", amount: 35000 });
+  mockCreateRequest.mockReset();
+  mockCreateRequest.mockReturnValue({
+    merchantUid: "order_contract-1_1",
+    amount: 35000,
+    productName: "데모 프로그램",
+    provider: "mock",
+    paymentParams: {},
+  });
+  mockVerifyPayment.mockReset();
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -215,7 +237,7 @@ describe("signContract (FR-003, FR-004, FR-011)", () => {
   });
 });
 
-describe("startPayment (FR-005, FR-007, FR-008, NFR-003)", () => {
+describe("startPayment (FR-005, FR-007, FR-008, NFR-003 + SPEC-011/012)", () => {
   function wireTransaction() {
     // $transaction(cb) 형태를 tx로 대리 실행
     mockPrisma.$transaction.mockImplementation(async (cb: (tx: typeof mockPrisma) => unknown) => {
@@ -223,10 +245,12 @@ describe("startPayment (FR-005, FR-007, FR-008, NFR-003)", () => {
     });
   }
 
-  it("서명 완료 후 결제 시 Payment/Settlement/Program/Notification을 생성한다 (AC-004, AC-010)", async () => {
-    mockPrisma.contract.findUnique.mockResolvedValue(
-      contractFixture({ fanSignedAt: new Date() }),
-    );
+  function fullySignedFixture() {
+    return contractFixture({ fanSignedAt: new Date(), creatorSignedAt: new Date() });
+  }
+
+  it("양측 서명 완료 후 결제 시 Payment/Settlement/Program/Notification을 생성한다 (AC-004, AC-010)", async () => {
+    mockPrisma.contract.findUnique.mockResolvedValue(fullySignedFixture());
     mockPrisma.payment.findFirst.mockResolvedValue(null);
     wireTransaction();
     mockPrisma.payment.create.mockResolvedValue({ id: "pay-1", amount: 35000, feeKrw: 3500, status: "PAID" });
@@ -241,6 +265,8 @@ describe("startPayment (FR-005, FR-007, FR-008, NFR-003)", () => {
     const payArg = mockPrisma.payment.create.mock.calls[0][0];
     expect(payArg.data.feeKrw).toBe(3500);
     expect(payArg.data.status).toBe("PAID");
+    expect(payArg.data.provider).toBe("mock");
+    expect(payArg.data.merchantUid).toBe("order_contract-1_1");
     const setArg = mockPrisma.settlement.create.mock.calls[0][0];
     expect(setArg.data.payout).toBe(31500);
     expect(setArg.data.status).toBe("PENDING");
@@ -249,10 +275,18 @@ describe("startPayment (FR-005, FR-007, FR-008, NFR-003)", () => {
     const notifArg = mockPrisma.notification.create.mock.calls[0][0];
     expect(notifArg.data.type).toBe("PAYMENT_COMPLETED");
     expect(notifArg.data.userId).toBe(FAN_ID);
+    if (result.ok) {
+      expect(result.data.status).toBe("PAID");
+      expect(result.data.provider).toBe("mock");
+      expect(result.data.merchantUid).toBe("order_contract-1_1");
+    }
   });
 
-  it("서명 전이면 결제를 거부한다 400 (FR-005)", async () => {
-    mockPrisma.contract.findUnique.mockResolvedValue(contractFixture({ fanSignedAt: null }));
+  it("양측 서명이 완료되지 않았으면 400 (SPEC-011 FR-017)", async () => {
+    // 팬 서명만 있고 크리에이터 서명 누락
+    mockPrisma.contract.findUnique.mockResolvedValue(
+      contractFixture({ fanSignedAt: new Date(), creatorSignedAt: null }),
+    );
     const result = await startPayment(FAN_CTX, "contract-1");
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.status).toBe(400);
@@ -260,7 +294,7 @@ describe("startPayment (FR-005, FR-007, FR-008, NFR-003)", () => {
   });
 
   it("이미 PAID 결제가 있으면 409, 중복 결제를 막는다 (FR-008, AC-005)", async () => {
-    mockPrisma.contract.findUnique.mockResolvedValue(contractFixture({ fanSignedAt: new Date() }));
+    mockPrisma.contract.findUnique.mockResolvedValue(fullySignedFixture());
     mockPrisma.payment.findFirst.mockResolvedValue({ id: "pay-existing", status: "PAID" });
     const result = await startPayment(FAN_CTX, "contract-1");
     expect(result.ok).toBe(false);
@@ -269,7 +303,7 @@ describe("startPayment (FR-005, FR-007, FR-008, NFR-003)", () => {
   });
 
   it("팬 본인이 아니면 403 (AC-006)", async () => {
-    mockPrisma.contract.findUnique.mockResolvedValue(contractFixture({ fanSignedAt: new Date() }));
+    mockPrisma.contract.findUnique.mockResolvedValue(fullySignedFixture());
     const result = await startPayment(
       { userId: OTHER_FAN_ID, role: "FAN", creatorProfileId: null },
       "contract-1",
@@ -279,7 +313,7 @@ describe("startPayment (FR-005, FR-007, FR-008, NFR-003)", () => {
   });
 
   it("트랜잭션 실패 시 500을 반환하고 롤백된다 (AC-009)", async () => {
-    mockPrisma.contract.findUnique.mockResolvedValue(contractFixture({ fanSignedAt: new Date() }));
+    mockPrisma.contract.findUnique.mockResolvedValue(fullySignedFixture());
     mockPrisma.payment.findFirst.mockResolvedValue(null);
     mockPrisma.$transaction.mockRejectedValue(new Error("settlement failed"));
     const result = await startPayment(FAN_CTX, "contract-1");
@@ -288,7 +322,7 @@ describe("startPayment (FR-005, FR-007, FR-008, NFR-003)", () => {
   });
 
   it("동시 결제 경합으로 unique 위반(P2002) 시 409로 매핑한다 (FR-008, AC-005)", async () => {
-    mockPrisma.contract.findUnique.mockResolvedValue(contractFixture({ fanSignedAt: new Date() }));
+    mockPrisma.contract.findUnique.mockResolvedValue(fullySignedFixture());
     mockPrisma.payment.findFirst.mockResolvedValue(null);
     mockPrisma.$transaction.mockRejectedValue(Object.assign(new Error("unique"), { code: "P2002" }));
     const result = await startPayment(FAN_CTX, "contract-1");
@@ -296,8 +330,8 @@ describe("startPayment (FR-005, FR-007, FR-008, NFR-003)", () => {
     if (!result.ok) expect(result.status).toBe(409);
   });
 
-  it("MockPaymentProvider.charge를 호출한다 (FR-007, AC-008)", async () => {
-    mockPrisma.contract.findUnique.mockResolvedValue(contractFixture({ fanSignedAt: new Date() }));
+  it("Mock provider.charge를 호출한다 (FR-007, AC-008)", async () => {
+    mockPrisma.contract.findUnique.mockResolvedValue(fullySignedFixture());
     mockPrisma.payment.findFirst.mockResolvedValue(null);
     wireTransaction();
     mockPrisma.payment.create.mockResolvedValue({ id: "pay-1" });

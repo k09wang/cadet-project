@@ -6,7 +6,7 @@ import { isActiveMember } from "@/lib/membership";
  * 다음 중 하나라도 참이면 true:
  *   (a) 해당 크리에이터의 활성 Membership 존재 (SPEC-003 isActiveMember)
  *   (b) 해당 크리에이터 Program에 대해 status=ACCEPTED + 결제 완료
- *       (Contract.payments 중 status IN [PAID, RELEASED])인 ProgramApplication 존재
+ *       (ProgramApplication.payment.status IN [PAID, RELEASED])인 ProgramApplication 존재
  *   (c) 본인이 해당 CreatorProfile의 소유 크리에이터
  *
  * [NFR-001] 서버 측에서 호출하여 접근 제어를 수행한다 (클라이언트 게이트 금지).
@@ -30,11 +30,7 @@ export async function canAccessCommunity(
       userId,
       status: "ACCEPTED",
       program: { creatorProfileId },
-      contract: {
-        payments: {
-          some: { status: { in: ["PAID", "RELEASED"] } },
-        },
-      },
+      payment: { status: { in: ["PAID", "RELEASED"] } },
     },
     select: { id: true },
   });

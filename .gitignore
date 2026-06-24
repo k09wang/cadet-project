@@ -212,3 +212,10 @@ dist-ssr/
 .vercel/
 .netlify/
 .firebase/
+.vercel
+.env*
+
+# Playwright (artbridge 하네스 STAGE 5 E2E)
+/test-results/
+/playwright-report/
+/playwright/.cache/

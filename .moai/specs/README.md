@@ -20,6 +20,17 @@
 | [SPEC-008](./SPEC-008/spec.md) | 프로그램 완료 처리 및 리뷰 | item 8 | "완료 후 리뷰 작성 가능" | **필수**: `Review`에 `@@unique([programId, userId])` 제약 추가 |
 | [SPEC-009](./SPEC-009/spec.md) | PAID 포스트 단건 구매 (Mock 결제) | (§4.2 P1) | — | **Run 시 선행**: `Payment.postId String?` + `Post.payments` 역관계 (안 A 권장, 미확정) |
 | [SPEC-010](./SPEC-010/spec.md) | AI 가격·혜택·프로그램 구성 추천 | (§4.2 P1) | — | 없음 (`.env`에 `OPENAI_API_KEY` 추가 + Mock 폴백) |
+| [SPEC-011](./SPEC-011/spec.md) | 금액 조율(합의 금액) 및 양측 전자 서명 | RFP 갭 P0 #1·#4 | "양측 전자 서명까지 동작" | 재사용 우선(`Contract.agreedAmount/fanSignedAt/creatorSignedAt`); 선택 보완(`ContractStatus`) |
+| [SPEC-012](./SPEC-012/spec.md) | PG Sandbox 결제 연동 | RFP 갭 P0 #2 | "PG sandbox 결제 요청 → 콜백 → 검증 흐름 동작" | **필수**: `Payment`에 `provider`/`providerTxId`/주문번호 필드 보완 |
+| [SPEC-013](./SPEC-013/spec.md) | 에스크로 완료(납품 요청·승인) 및 상호 평가 양방향 | RFP 갭 P0 #3·#5 | "상호 평가 작성 가능 및 평균 별점 노출" | **필수**: `Review.revieweeId` + `@@unique([programId, userId, revieweeId])`, `ProgramApplication.deliveryRequestedAt/completionApprovedAt` |
+| [SPEC-014](./SPEC-014/spec.md) | 유저플로우 정합 보완 (멤버십 관리·AI 추천 정합·커뮤니티 진입점) | 유저플로우 n8·n10·n40/n41 | "멤버십 관리/AI 추천/커뮤니티 진입 동선 정합" | (없음 — 기존 스키마 위 동작) |
+| [SPEC-015](./SPEC-015/spec.md) | 확장 유저플로우 데이터 모델 정합화 | 확장 유저플로우 2026-06-23 | "멤버십 결제/프로그램 좌석 결제/정산/작품 주문·배송 상태 저장" | **필수**: `Membership.status`, `Payment.programApplicationId/artworkOrderId`, 정산 상태 확장, 작품 주문·배송 모델 |
+| [SPEC-016](./SPEC-016/spec.md) | 역할별 GNB 이후 핵심 활동 허브와 결제/운영 동선 보완 | 확장 유저플로우 2026-06-23 + GNB 개편 | "팬 활동 허브/작품 주문 목록/정산 설정/checkout/FAQ/알림 필터" | 1차는 기존 SPEC-015 모델 재사용, 2차 선택 보완(`CreatorPayoutAccount`, `ProgramFaq`) |
+
+> SPEC-011~013은 `docs/RFP-GAP-ANALYSIS.md`의 P0 고급 필수 갭(양측 서명·PG sandbox·상호 평가 양방향·금액 조율·에스크로 완료 주체)을 SPEC-006/008 확장으로 정의한다.
+> SPEC-014는 `보완계획-유저플로우-2026-06-21.md`의 확정 결정을 따라 유저플로우 대비 누락 동선 3건(멤버십 관리 화면+진입점, AI 추천 위치 정합, 커뮤니티 진입점)을 SPEC-003/007/010 위에서 보완한다(스키마 변경 없음).
+> SPEC-015는 `ArtBridge_유저플로우_확장안_2026-06-23.md`의 결제/정산/작품 커머스 확장을 실제 데이터 모델과 상태 전이에 맞추는 스키마 정합 SPEC이다.
+> SPEC-016은 SPEC-015 이후 역할별 GNB에서 도착하는 핵심 화면과 결제/운영 확인 단계를 보완하는 UX/화면 정합 SPEC이다.
 
 ---
 
@@ -51,6 +62,13 @@ SPEC-003        SPEC-004            (스튜디오 탭 호스트)
 // P1 확장 (MVP 데모 성공선 외, 선택)
 SPEC-003 ──▶ SPEC-009 (PAID 포스트 단건 구매)
 SPEC-004 ──▶ SPEC-010 (AI 가격·혜택 추천)
+SPEC-003, SPEC-004, SPEC-009, SPEC-012 ──▶ SPEC-015 (확장 데이터 모델 정합화)
+SPEC-015 ──▶ SPEC-016 (역할별 활동 허브 + checkout/운영 동선 보완)
+
+// P0 RFP 갭 확장 (고급 필수, SPEC-006/008 확장)
+SPEC-006 ──▶ SPEC-011 (금액 조율 + 양측 서명)
+SPEC-011 ──▶ SPEC-012 (PG Sandbox 결제)
+SPEC-008, SPEC-011, SPEC-012 ──▶ SPEC-013 (에스크로 완료 + 상호 평가 양방향)
 ```
 
 ### 구현 순서 권장 (순차 + 병렬)
@@ -63,6 +81,9 @@ SPEC-004 ──▶ SPEC-010 (AI 가격·혜택 추천)
 6. **Phase F**: `SPEC-007` (SPEC-003, SPEC-005, SPEC-006 선행)
 7. **Phase G**: `SPEC-008` (SPEC-006 선행; SPEC-007 느슨한 의존)
 8. **Phase H (P1, 선택)**: `SPEC-009` (SPEC-003 선행), `SPEC-010` (SPEC-004 선행) — 병렬 가능, MVP 데모 성공선 외
+9. **Phase I (P0 RFP 갭, 고급 필수)**: `SPEC-011` (SPEC-006 선행) → `SPEC-012` (SPEC-011 선행) → `SPEC-013` (SPEC-008·011·012 선행) — 순차 권장
+10. **Phase J (확장 유저플로우 데이터 정합)**: `SPEC-015` (SPEC-003·004·009·012 선행 권장) — 멤버십 상태 → 프로그램 좌석 결제 → 정산 → 작품 주문/배송 → 알림 순서로 실행
+11. **Phase K (역할별 화면/동선 정합)**: `SPEC-016` (SPEC-015 선행 권장) — 공개 모바일 GNB → 팬 활동 허브/작품 주문 목록 → 크리에이터 정산 설정 → checkout 전용 화면 → FAQ/알림 필터 순서로 실행
 
 ---
 

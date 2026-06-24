@@ -13,10 +13,13 @@ async function createPostAction(formData: FormData): Promise<void> {
     redirect("/login");
   }
 
+  // intent=draft → 임시저장(DRAFT), 그 외 → 발행(PUBLISHED).
+  const status = formData.get("intent") === "draft" ? "DRAFT" : "PUBLISHED";
   const body: Record<string, unknown> = {
     title: formData.get("title"),
     body: formData.get("body"),
     visibility: formData.get("visibility"),
+    status,
   };
   const priceKrw = formData.get("priceKrw");
   if (priceKrw) body.priceKrw = Number(priceKrw);
@@ -28,7 +31,10 @@ async function createPostAction(formData: FormData): Promise<void> {
   });
 
   if (res.ok) {
-    redirect("/dashboard/creator");
+    // 작성된 포스트 상세로 이동하며 완료 토스트 노출.
+    const created = (await res.json()) as { id: string };
+    const kind = status === "DRAFT" ? "draft" : "published";
+    redirect(`/posts/${created.id}?created=${kind}`);
   }
 }
 

@@ -69,4 +69,18 @@ describe("/dashboard/creator (AC-004)", () => {
     render(ui);
     expect(screen.getByRole("link", { name: /스튜디오 편집/ })).toBeTruthy();
   });
+
+  it("renders 멤버십 관리 link (REQ-1-009, AC-1-009)", async () => {
+    const ui = await CreatorDashboardPage();
+    render(ui);
+    const link = screen.getByRole("link", { name: /멤버십 관리/ });
+    expect(link).toHaveAttribute("href", "/dashboard/creator/memberships");
+  });
+
+  it("renders 내 커뮤니티 link (REQ-3-002, AC-3-002)", async () => {
+    const ui = await CreatorDashboardPage();
+    render(ui);
+    const link = screen.getByRole("link", { name: /내 커뮤니티/ });
+    expect(link).toHaveAttribute("href", "/creators/p-1?tab=community");
+  });
 });

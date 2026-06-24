@@ -24,15 +24,19 @@ describe("ProgramDetail (FR-004, FR-005, AC-003, AC-006)", () => {
 
   it("title·priceKrw·maxParticipants·status 배지를 표시한다 (AC-003)", () => {
     render(<ProgramDetail program={base} />);
-    expect(screen.getByText("4주 드로잉 챌린지")).toBeTruthy();
+    // 신청 폼 요약 박스에도 제목이 표시되므로 1개 이상 존재하면 통과
+    expect(screen.getAllByText("4주 드로잉 챌린지").length).toBeGreaterThan(0);
     expect(screen.getByText("₩35,000")).toBeTruthy();
-    expect(screen.getByText("20명")).toBeTruthy();
+    expect(screen.getByText("정원 20명")).toBeTruthy();
     expect(screen.getByText("모집 중")).toBeTruthy();
   });
 
-  it("RECRUITING이면 '참여 신청' CTA를 렌더한다 (SPEC-005에서 활성화)", () => {
+  it("RECRUITING이면 checkout 진입 CTA를 렌더한다", () => {
     render(<ProgramDetail program={base} />);
-    expect(screen.getByRole("button", { name: "참여 신청" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "결제하고 신청하기" })).toHaveAttribute(
+      "href",
+      "/programs/prog-1/checkout",
+    );
   });
 
   it("RECRUITING + 과거 마감일이면 '모집 마감' 상태로 표시한다 (AC-006)", () => {

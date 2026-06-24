@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
-import { processApplication } from "@/lib/applications";
+import {
+  cancelProgramApplication,
+  removeProgramParticipant,
+} from "@/lib/applications";
 import { processSchema } from "@/lib/validation/application";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 /**
- * PATCH /api/applications/:id — 신청 처리 (수락/거절) (SPEC-005 FR-007~FR-009, AC-010~AC-012).
+ * PATCH /api/applications/:id — 선착순 프로그램 신청 취소/멤버 제외.
  * 비로그인 401 → 검증실패 400 → 서비스 호출(403/404/400) → 200.
  */
 export async function PATCH(request: Request, { params }: RouteContext) {
@@ -31,12 +34,19 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   const { id: applicationId } = await params;
-  const result = await processApplication(
-    { role: user.role, creatorProfileId: user.creatorProfile?.id },
-    applicationId,
-    parsed.data.action,
-    parsed.data.autoRejectOthers,
-  );
+  const serviceContext = { role: user.role, creatorProfileId: user.creatorProfile?.id };
+  let result:
+    | Awaited<ReturnType<typeof cancelProgramApplication>>
+    | Awaited<ReturnType<typeof removeProgramParticipant>>;
+  if (parsed.data.action === "cancel") {
+    result = await cancelProgramApplication(applicationId, user.id);
+  } else {
+    result = await removeProgramParticipant(
+      serviceContext,
+      applicationId,
+      parsed.data.removedReason,
+    );
+  }
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });

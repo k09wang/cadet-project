@@ -26,12 +26,21 @@ enum PostVisibility {
   PAID
 }
 
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
+
 enum ProgramApplicationStatus {
   PENDING
+  RESERVED
+  PENDING_PAYMENT
   ACCEPTED
   REJECTED
   AUTO_REJECTED
+  PAYMENT_FAILED
   CANCELLED
+  REMOVED
 }
 
 // @MX:NOTE: Program lifecycle states. Transitions drive side-effects (notifications, auto-reject).
@@ -55,7 +64,79 @@ enum PaymentStatus {
 
 enum SettlementStatus {
   PENDING
+  AVAILABLE
   RELEASED
+  ON_HOLD
+  ADJUSTED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PAYMENT_FAILED
+}
+
+enum ArtworkStatus {
+  DRAFT
+  PUBLISHED
+  RESERVED
+  SOLD
+  HIDDEN
+}
+
+enum ArtworkReservationStatus {
+  ACTIVE
+  EXPIRED
+  CONVERTED
+  CANCELLED
+}
+
+enum ArtworkOrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PREPARING
+  SHIPPED
+  DELIVERED
+  RECEIVED
+  CANCELLED
+  REFUNDED
+  ISSUE_OPENED
+}
+
+enum ArtworkIssueType {
+  NOT_DELIVERED
+  DAMAGED
+  WRONG_ITEM
+  NOT_AS_DESCRIBED
+  REFUND_REQUEST
+  OTHER
+}
+
+enum ArtworkIssueStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  REJECTED
+}
+
+enum SettlementAdjustmentType {
+  REFUND_DEDUCTION
+  HOLD
+  RELEASE
+  MANUAL_ADJUSTMENT
+}
+
+enum CreatorPayoutBusinessType {
+  PERSONAL
+  SOLE_PROPRIETOR
+  CORPORATION
+}
+
+enum PayoutVerificationStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  NEEDS_REVIEW
 }
 
 // ──────────────────────────────── Models ────────────────────────────────
@@ -72,17 +153,22 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  creatorProfile     CreatorProfile?
-  memberships        Membership[]
-  applications       ProgramApplication[]
-  notifications      Notification[]
-  paymentsAsFan      Payment[]         @relation("PaymentFan")
-  reviews            Review[]
-  communityPosts     CommunityPost[]
-  bookmarks          Bookmark[]
+  creatorProfile      CreatorProfile?
+  memberships         Membership[]
+  applications        ProgramApplication[]
+  notifications       Notification[]
+  paymentsAsFan       Payment[]                     @relation("PaymentFan")
+  artworkReservations ArtworkInventoryReservation[]
+  artworkOrders       ArtworkOrder[]
+  artworkIssues       ArtworkOrderIssue[]
+  // @MX:NOTE: SPEC-013 — 상호 평가 양방향. reviewsAuthored(내가 쓴 리뷰) / reviewsReceived(내가 받은 리뷰).
+  reviewsAuthored     Review[]                      @relation("ReviewReviewer")
+  reviewsReceived     Review[]                      @relation("ReviewReviewee")
+  communityPosts      CommunityPost[]
+  bookmarks           Bookmark[]
   // @MX:NOTE: SPEC-AUTH — Auth.js PrismaAdapter (Google OAuth 계정 연결).
-  accounts           Account[]
-  sessions           Session[]
+  accounts            Account[]
+  sessions            Session[]
 
   @@map("users")
 }
@@ -138,18 +224,21 @@ model CreatorProfile {
   programs       Program[]
   communityPosts CommunityPost[]
   bookmarkedBy   Bookmark[]
+  works          CreatorWork[]
+  artworks       Artwork[]
+  payoutAccount  CreatorPayoutAccount?
 
   @@map("creator_profiles")
 }
 
 model MembershipPlan {
-  id                 String   @id @default(cuid())
-  creatorProfileId   String   @map("creator_profile_id")
-  title              String
-  description        String?
-  priceKrw           Int      @map("price_krw")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(cuid())
+  creatorProfileId String   @map("creator_profile_id")
+  title            String
+  description      String?
+  priceKrw         Int      @map("price_krw")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   creatorProfile CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
   memberships    Membership[]
@@ -159,12 +248,16 @@ model MembershipPlan {
 }
 
 model Membership {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  planId    String   @map("plan_id")
-  startedAt DateTime @default(now()) @map("started_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            String           @id @default(cuid())
+  userId        String           @map("user_id")
+  planId        String           @map("plan_id")
+  status        MembershipStatus @default(ACTIVE)
+  startedAt     DateTime         @default(now()) @map("started_at")
+  expiresAt     DateTime?        @map("expires_at")
+  cancelledAt   DateTime?        @map("cancelled_at")
+  lastPaymentId String?          @map("last_payment_id")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
 
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan     MembershipPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
@@ -172,43 +265,46 @@ model Membership {
 
   @@unique([userId, planId])
   @@index([planId])
+  @@index([status, expiresAt])
   @@map("memberships")
 }
 
 model Post {
-  id                String         @id @default(cuid())
-  creatorProfileId  String         @map("creator_profile_id")
-  title             String
-  body              String
-  visibility        PostVisibility @default(PUBLIC)
-  priceKrw          Int?           @map("price_krw")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt @map("updated_at")
+  id               String         @id @default(cuid())
+  creatorProfileId String         @map("creator_profile_id")
+  title            String
+  body             String
+  visibility       PostVisibility @default(PUBLIC)
+  status           PostStatus     @default(PUBLISHED)
+  priceKrw         Int?           @map("price_krw")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
 
   creatorProfile CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
   payments       Payment[]
 
   @@index([creatorProfileId, createdAt])
+  @@index([creatorProfileId, status, createdAt])
   @@map("posts")
 }
 
 model Program {
-  id                String        @id @default(cuid())
-  creatorProfileId  String        @map("creator_profile_id")
-  title             String
-  description       String?
-  category          String?
-  priceKrw          Int           @default(0) @map("price_krw")
-  startDate         DateTime?     @map("start_date")
-  endDate           DateTime?     @map("end_date")
-  recruitDeadline   DateTime?     @map("recruit_deadline")
-  maxParticipants   Int?          @map("max_participants")
-  status            ProgramStatus @default(RECRUITING)
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt      @map("updated_at")
-  deletedAt         DateTime?     @map("deleted_at")
+  id               String        @id @default(cuid())
+  creatorProfileId String        @map("creator_profile_id")
+  title            String
+  description      String?
+  category         String?
+  priceKrw         Int           @default(0) @map("price_krw")
+  startDate        DateTime?     @map("start_date")
+  endDate          DateTime?     @map("end_date")
+  recruitDeadline  DateTime?     @map("recruit_deadline")
+  maxParticipants  Int?          @map("max_participants")
+  status           ProgramStatus @default(RECRUITING)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  deletedAt        DateTime?     @map("deleted_at")
 
-  creatorProfile CreatorProfile          @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  creatorProfile CreatorProfile       @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
   applications   ProgramApplication[]
   reviews        Review[]
 
@@ -218,17 +314,28 @@ model Program {
 }
 
 model ProgramApplication {
-  id         String                   @id @default(cuid())
-  programId  String                   @map("program_id")
-  userId     String                   @map("user_id")
-  status     ProgramApplicationStatus @default(PENDING)
-  message    String?
-  createdAt  DateTime                 @default(now()) @map("created_at")
-  updatedAt  DateTime                 @updatedAt @map("updated_at")
+  id                   String                   @id @default(cuid())
+  programId            String                   @map("program_id")
+  userId               String                   @map("user_id")
+  status               ProgramApplicationStatus @default(PENDING)
+  message              String?
+  portfolioUrl         String?                  @map("portfolio_url")
+  // @MX:NOTE: SPEC-013 — 에스크로 참여 단위 시각. 납품 요청(크리에이터)→완료 승인(팬=지불자) 순서 강제.
+  // deliveryRequestedAt != null 이어야만 완료 승인 가능(FR-007). completionApprovedAt 세팅 시 Payment/Settlement RELEASED.
+  deliveryRequestedAt  DateTime?                @map("delivery_requested_at")
+  completionApprovedAt DateTime?                @map("completion_approved_at")
+  paymentExpiresAt     DateTime?                @map("payment_expires_at")
+  paymentFailedAt      DateTime?                @map("payment_failed_at")
+  cancelledAt          DateTime?                @map("cancelled_at")
+  removedAt            DateTime?                @map("removed_at")
+  removedReason        String?                  @map("removed_reason")
+  createdAt            DateTime                 @default(now()) @map("created_at")
+  updatedAt            DateTime                 @updatedAt @map("updated_at")
 
-  program   Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  contract  Contract?
+  program  Program   @relation(fields: [programId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contract Contract?
+  payment  Payment?
 
   @@index([programId, status])
   @@index([userId])
@@ -251,44 +358,226 @@ model Contract {
 }
 
 model Payment {
-  id            String        @id @default(cuid())
-  membershipId  String?       @map("membership_id")
+  id                   String        @id @default(cuid())
+  membershipId         String?       @map("membership_id")
+  programApplicationId String?       @unique @map("program_application_id")
+  artworkOrderId       String?       @unique @map("artwork_order_id")
   // SPEC-006 FR-008: 1계약 1결제 — DB 레벨 중복 결제 차단. nullable이므로
   // 멤버십 결제(contractId=null)는 Postgres가 다중 NULL을 허용해 영향 없음.
-  contractId    String?       @unique @map("contract_id")
+  contractId           String?       @unique @map("contract_id")
   // SPEC-009 안 A: PAID 포스트 단건 구매 슬롯. membershipId/contractId와 동일한
   // nullable 선택적 패턴. (membershipId, contractId, postId) 중 정확히 하나만 not null
   // (앱 레이어 제약 — FR-003). 중복 구매 방지는 애플리케이션 레벨 PAID 상태 체크(FR-005).
-  postId        String?       @map("post_id")
-  fanUserId     String        @map("fan_user_id")
-  amount        Int
-  feeKrw        Int           @default(0) @map("fee_krw")
-  status        PaymentStatus @default(PENDING)
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  // SPEC-015: programApplicationId/artworkOrderId 추가. 여러 nullable FK 중 정확히 하나만
+  // 결제 원천으로 채우는 제약은 Prisma 앱 레이어에서 검증한다.
+  postId               String?       @map("post_id")
+  fanUserId            String        @map("fan_user_id")
+  amount               Int
+  feeKrw               Int           @default(0) @map("fee_krw")
+  status               PaymentStatus @default(PENDING)
+  // @MX:NOTE: SPEC-012 — PG sandbox 결제 추적 필드. provider("portone"|"toss"|"mock"),
+  // providerTxId(PG 거래 고유 ID, 검증 응답으로 확정), merchantUid(앱 발급 주문번호, 결제창·콜백·검증 공통 대조).
+  // 모두 nullable → 레거시 Mock 결제·멤버십/포스트 결제와 호환. merchantUid @unique(nullable 다중 NULL 허용).
+  provider             String?       @map("provider")
+  providerTxId         String?       @map("provider_tx_id")
+  merchantUid          String?       @unique @map("merchant_uid")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
 
-  membership Membership? @relation(fields: [membershipId], references: [id], onDelete: SetNull)
-  contract   Contract?   @relation(fields: [contractId], references: [id], onDelete: SetNull)
-  post       Post?       @relation(fields: [postId], references: [id], onDelete: SetNull)
-  fan        User        @relation("PaymentFan", fields: [fanUserId], references: [id], onDelete: Cascade)
-  settlement Settlement?
+  membership         Membership?         @relation(fields: [membershipId], references: [id], onDelete: SetNull)
+  programApplication ProgramApplication? @relation(fields: [programApplicationId], references: [id], onDelete: SetNull)
+  artworkOrder       ArtworkOrder?       @relation(fields: [artworkOrderId], references: [id], onDelete: SetNull)
+  contract           Contract?           @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  post               Post?               @relation(fields: [postId], references: [id], onDelete: SetNull)
+  fan                User                @relation("PaymentFan", fields: [fanUserId], references: [id], onDelete: Cascade)
+  settlement         Settlement?
 
   @@index([status, createdAt])
+  @@index([membershipId, fanUserId, status])
+  @@index([programApplicationId, status])
+  @@index([artworkOrderId, status])
   @@index([postId, fanUserId, status])
   @@map("payments")
 }
 
 model Settlement {
-  id        String           @id @default(cuid())
-  paymentId String           @unique @map("payment_id")
-  payout    Int
-  status    SettlementStatus @default(PENDING)
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
+  id          String           @id @default(cuid())
+  paymentId   String           @unique @map("payment_id")
+  sourceType  String?          @map("source_type")
+  sourceId    String?          @map("source_id")
+  grossAmount Int              @default(0) @map("gross_amount")
+  feeKrw      Int              @default(0) @map("fee_krw")
+  payout      Int
+  status      SettlementStatus @default(PENDING)
+  availableAt DateTime?        @map("available_at")
+  releasedAt  DateTime?        @map("released_at")
+  heldReason  String?          @map("held_reason")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
 
-  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  payment     Payment                @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  adjustments SettlementAdjustment[]
 
+  @@index([sourceType, sourceId])
+  @@index([status, availableAt])
   @@map("settlements")
+}
+
+model SettlementAdjustment {
+  id           String                   @id @default(cuid())
+  settlementId String                   @map("settlement_id")
+  type         SettlementAdjustmentType
+  amount       Int
+  reason       String?
+  createdAt    DateTime                 @default(now()) @map("created_at")
+
+  settlement Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([settlementId, type])
+  @@map("settlement_adjustments")
+}
+
+model CreatorPayoutAccount {
+  id                     String                     @id @default(cuid())
+  creatorProfileId       String                     @unique @map("creator_profile_id")
+  businessType           CreatorPayoutBusinessType  @default(PERSONAL) @map("business_type")
+  bankName               String                     @map("bank_name")
+  accountHolder          String                     @map("account_holder")
+  accountNumberMasked    String                     @map("account_number_masked")
+  accountNumberLast4     String                     @map("account_number_last4")
+  businessRegistrationNo String?                    @map("business_registration_no")
+  verificationStatus     PayoutVerificationStatus   @default(PENDING_VERIFICATION) @map("verification_status")
+  submittedAt            DateTime                   @default(now()) @map("submitted_at")
+  verifiedAt             DateTime?                  @map("verified_at")
+  createdAt              DateTime                   @default(now()) @map("created_at")
+  updatedAt              DateTime                   @updatedAt @map("updated_at")
+
+  creatorProfile CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([verificationStatus])
+  @@map("creator_payout_accounts")
+}
+
+model CreatorWork {
+  id               String    @id @default(cuid())
+  creatorProfileId String    @map("creator_profile_id")
+  title            String
+  kind             String?
+  description      String?
+  imageUrl         String?   @map("image_url")
+  externalUrl      String?   @map("external_url")
+  startedAt        DateTime? @map("started_at")
+  endedAt          DateTime? @map("ended_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  creatorProfile CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([creatorProfileId, startedAt])
+  @@map("creator_works")
+}
+
+model Artwork {
+  id               String        @id @default(cuid())
+  creatorProfileId String        @map("creator_profile_id")
+  title            String
+  description      String?
+  imageUrl         String?       @map("image_url")
+  priceKrw         Int           @map("price_krw")
+  stock            Int           @default(1)
+  status           ArtworkStatus @default(DRAFT)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  creatorProfile CreatorProfile                @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
+  reservations   ArtworkInventoryReservation[]
+  orders         ArtworkOrder[]
+
+  @@index([creatorProfileId, status, createdAt])
+  @@map("artworks")
+}
+
+model ArtworkInventoryReservation {
+  id        String                   @id @default(cuid())
+  artworkId String                   @map("artwork_id")
+  userId    String                   @map("user_id")
+  status    ArtworkReservationStatus @default(ACTIVE)
+  expiresAt DateTime                 @map("expires_at")
+  createdAt DateTime                 @default(now()) @map("created_at")
+  updatedAt DateTime                 @updatedAt @map("updated_at")
+
+  artwork Artwork @relation(fields: [artworkId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([artworkId, status, expiresAt])
+  @@index([userId, status])
+  @@map("artwork_inventory_reservations")
+}
+
+model ArtworkOrder {
+  id              String             @id @default(cuid())
+  artworkId       String             @map("artwork_id")
+  fanUserId       String             @map("fan_user_id")
+  status          ArtworkOrderStatus @default(PENDING_PAYMENT)
+  recipientName   String             @map("recipient_name")
+  recipientPhone  String             @map("recipient_phone")
+  shippingAddress String             @map("shipping_address")
+  shippingMemo    String?            @map("shipping_memo")
+  itemAmount      Int                @map("item_amount")
+  shippingFeeKrw  Int                @default(0) @map("shipping_fee_krw")
+  totalAmount     Int                @map("total_amount")
+  paidAt          DateTime?          @map("paid_at")
+  cancelledAt     DateTime?          @map("cancelled_at")
+  refundReason    String?            @map("refund_reason")
+  receivedAt      DateTime?          @map("received_at")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  artwork  Artwork             @relation(fields: [artworkId], references: [id], onDelete: Restrict)
+  fan      User                @relation(fields: [fanUserId], references: [id], onDelete: Cascade)
+  payment  Payment?
+  shipment ArtworkShipment?
+  issues   ArtworkOrderIssue[]
+
+  @@index([fanUserId, status, createdAt])
+  @@index([artworkId, status])
+  @@map("artwork_orders")
+}
+
+model ArtworkShipment {
+  id          String    @id @default(cuid())
+  orderId     String    @unique @map("order_id")
+  carrier     String
+  trackingNo  String    @map("tracking_no")
+  shippedAt   DateTime? @map("shipped_at")
+  deliveredAt DateTime? @map("delivered_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  order ArtworkOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([trackingNo])
+  @@map("artwork_shipments")
+}
+
+model ArtworkOrderIssue {
+  id         String             @id @default(cuid())
+  orderId    String             @map("order_id")
+  userId     String             @map("user_id")
+  type       ArtworkIssueType
+  status     ArtworkIssueStatus @default(OPEN)
+  message    String
+  imageUrl   String?            @map("image_url")
+  resolvedAt DateTime?          @map("resolved_at")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+
+  order ArtworkOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, status])
+  @@index([userId, createdAt])
+  @@map("artwork_order_issues")
 }
 
 model Notification {
@@ -307,19 +596,27 @@ model Notification {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  programId String   @map("program_id")
-  userId    String   @map("user_id")
-  rating    Int
-  comment   String?
-  tags      String[] @default([])
-  createdAt DateTime @default(now()) @map("created_at")
+  id         String   @id @default(cuid())
+  programId  String   @map("program_id")
+  // @MX:NOTE: SPEC-013 — 작성자(reviewer). userId 유지(기존 호환), User.reviewsAuthored와 연결.
+  userId     String   @map("user_id")
+  // @MX:NOTE: SPEC-013 — 피평가자(reviewee). 작성자 역할 vs 피평가자 역할로 방향 도출(안 A).
+  // 팬이 쓰면 revieweeId=크리에이터, 크리에이터가 쓰면 revieweeId=팬. 양방향·다대다 평가 가능.
+  // 레거시 호환을 위해 nullable 허용 — 신규 리뷰는 항상 채워진다(createReview에서 보장).
+  revieweeId String?  @map("reviewee_id")
+  rating     Int
+  comment    String?
+  tags       String[] @default([])
+  createdAt  DateTime @default(now()) @map("created_at")
 
-  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program  Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  reviewer User    @relation("ReviewReviewer", fields: [userId], references: [id], onDelete: Cascade)
+  reviewee User?   @relation("ReviewReviewee", fields: [revieweeId], references: [id], onDelete: Cascade)
 
-  @@unique([programId, userId])
+  // @MX:NOTE: SPEC-013 — "한 프로그램에서 한 작성자가 한 피평가자에 대해 1개" → 양방향·다대다에서 중복 차단.
+  @@unique([programId, userId, revieweeId])
   @@index([programId])
+  @@index([revieweeId])
   @@map("reviews")
 }
 
@@ -342,10 +639,10 @@ model CommunityPost {
 
 // @MX:NOTE: Bookmark — 팬의 관심 작가 북마크 (PRD §7). @@unique로 중복 북마크 차단.
 model Bookmark {
-  id               String         @id @default(cuid())
-  fanId            String         @map("fan_id")
-  creatorProfileId String         @map("creator_profile_id")
-  createdAt        DateTime       @default(now()) @map("created_at")
+  id               String   @id @default(cuid())
+  fanId            String   @map("fan_id")
+  creatorProfileId String   @map("creator_profile_id")
+  createdAt        DateTime @default(now()) @map("created_at")
 
   fan            User           @relation(fields: [fanId], references: [id], onDelete: Cascade)
   creatorProfile CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)

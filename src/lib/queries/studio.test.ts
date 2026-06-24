@@ -3,20 +3,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // --- Mock prisma ---
 const mockFindUnique = vi.fn();
 const mockFindMany = vi.fn();
+const mockMembershipPlanFindFirst = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     creatorProfile: {
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
       findMany: (...args: unknown[]) => mockFindMany(...args),
     },
+    membershipPlan: {
+      findFirst: (...args: unknown[]) => mockMembershipPlanFindFirst(...args),
+    },
   },
 }));
 
-import { getCreatorStudio, listCreators } from "@/lib/queries/studio";
+import {
+  getCreatorStudio,
+  getMembershipPlanForCheckout,
+  listCreators,
+} from "@/lib/queries/studio";
 
 beforeEach(() => {
   mockFindUnique.mockReset();
   mockFindMany.mockReset();
+  mockMembershipPlanFindFirst.mockReset();
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -29,6 +38,7 @@ describe("getCreatorStudio", () => {
       posts: [{ id: "post-1" }],
       plans: [{ id: "plan-1" }],
       programs: [{ id: "prog-1" }],
+      artworks: [{ id: "art-1" }],
     };
     mockFindUnique.mockResolvedValue(profile);
 
@@ -43,6 +53,15 @@ describe("getCreatorStudio", () => {
     expect(call.include.posts).toEqual(expect.any(Object));
     expect(call.include.plans).toBeTruthy();
     expect(call.include.programs).toBeTruthy();
+    expect(call.include.artworks).toEqual(
+      expect.objectContaining({
+        where: { status: "PUBLISHED", stock: { gt: 0 } },
+        orderBy: { createdAt: "desc" },
+      }),
+    );
+    expect(call.include.works).toEqual({
+      orderBy: [{ startedAt: "desc" }, { createdAt: "desc" }],
+    });
   });
 
   it("returns null when the profile is not found (FR-011)", async () => {
@@ -57,6 +76,24 @@ describe("getCreatorStudio", () => {
     expect(call.include.posts).toEqual(
       expect.objectContaining({ orderBy: { createdAt: "desc" } }),
     );
+  });
+});
+
+describe("getMembershipPlanForCheckout", () => {
+  it("creatorProfileId와 planId가 일치하는 플랜만 조회한다", () => {
+    mockMembershipPlanFindFirst.mockReturnValue("plan");
+
+    expect(getMembershipPlanForCheckout("cp-1", "plan-1")).toBe("plan");
+
+    expect(mockMembershipPlanFindFirst).toHaveBeenCalledWith({
+      where: {
+        id: "plan-1",
+        creatorProfileId: "cp-1",
+      },
+      include: {
+        creatorProfile: { select: { id: true, studioName: true } },
+      },
+    });
   });
 });
 

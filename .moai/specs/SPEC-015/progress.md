@@ -1,0 +1,55 @@
+# SPEC-015 Progress
+
+- Started: 2026-06-23
+- Phase 0.1 complete: 기준 문서 `ArtBridge_유저플로우_확장안_2026-06-23.md` 확인
+- Phase 0.2 complete: 실제 `prisma/schema.prisma`의 `Membership`, `ProgramApplication`, `Payment`, `Settlement` 구조 확인
+- Phase 1 complete: 멤버십 결제, 프로그램 좌석 결제, 정산, 작품 주문/배송, 알림 이벤트 확장 요구사항을 EARS SPEC으로 정리
+- Phase 2.1 complete: Prisma schema에 `MembershipStatus`, 프로그램 결제 상태, 정산 상태, 작품 주문/배송 모델, `Payment.programApplicationId/artworkOrderId` 연결 추가
+- Phase 2.2 complete: `20260623143000_spec015_expanded_flow_data_model` 마이그레이션 추가
+- Phase 2.3 complete: SPEC-015 알림 타입 상수와 메시지/링크 유틸 확장
+- Phase 2.4 complete: `prisma validate`, `prisma generate`, `npm run typecheck`, `npm run lint`, 관련 Vitest 55개 통과
+- Note: 전체 `npm run test`는 574 passed / 8 failed. 실패는 실제 Supabase DB 연결 실패(`aws-1-ap-south-1.pooler.supabase.com:6543`)로 인한 기존 DB 의존 테스트이며, SPEC-015 관련 좁은 테스트는 통과.
+- Phase 3.1 complete: `applyToProgram`을 선착순 좌석 점유 기준으로 갱신. 무료 프로그램은 즉시 `ACCEPTED`, 유료 프로그램은 mock provider에서 즉시 `PAID`/`ACCEPTED`/`Settlement(PENDING)`까지 원자 처리하고 sandbox provider에서는 `PENDING_PAYMENT` 결제 요청을 생성.
+- Phase 3.2 complete: 팬 신청 취소(`CANCELLED`)와 크리에이터 참여자 제외(`REMOVED`) 서비스 함수 추가. 유료 결제건은 `REFUNDED`, 연결 정산은 `ON_HOLD` 처리.
+- Phase 3.3 complete: 작품 구매 서비스 `purchaseArtwork` 추가. mock 결제 성공 시 주문 `PAID`, `Payment.artworkOrderId`, 재고 차감, `Settlement(PENDING)`, 구매자/크리에이터 알림을 단일 트랜잭션으로 처리.
+- Phase 3.4 complete: `PaymentProvider` 결제 컨텍스트에 `programApplicationId`, `artworkOrderId` 추가. 활성 신청 중복 판정에 `RESERVED`/`PENDING_PAYMENT` 포함.
+- Phase 3.5 complete: `PATCH /api/applications/:id`에 팬 취소(`cancel`)와 크리에이터 참여자 제외(`remove`) 액션 연결. 검증 스키마에 `removedReason` 추가.
+- Phase 3.6 complete: 관련 Vitest 114개, TypeScript `tsc --noEmit`, ESLint, Prisma validate/generate 통과. 라우트 확장 후 관련 Vitest 55개, TypeScript, ESLint 재통과.
+- Phase 3.7 complete: 작품 발송 처리 서비스/API 추가. 크리에이터 소유권 확인 후 `ArtworkShipment` upsert, 주문 `SHIPPED`, 팬 알림 생성.
+- Phase 3.8 complete: 작품 문제 신고 서비스/API 추가. 구매자 권한 확인 후 `ArtworkOrderIssue` 생성, 주문 `ISSUE_OPENED`, 연결 정산 `ON_HOLD`, 크리에이터 알림 생성.
+- Phase 3.9 complete: SPEC-015 관련 Vitest 126개, TypeScript `tsc --noEmit`, ESLint, Prisma validate/generate 통과.
+- Phase 4.1 complete: 멤버십 가입 결제 성공 시 `Membership` upsert, `status=ACTIVE`, `expiresAt`, `lastPaymentId`, `Payment(PAID)`, `Settlement(PENDING, sourceType=MEMBERSHIP)`, 결제 완료 알림을 단일 트랜잭션으로 처리.
+- Phase 4.2 complete: 멤버십 결제 실패 시 `Membership.status=PAYMENT_FAILED`, `Payment.status=FAILED`, 실패 알림을 기록하고 멤버십 접근 권한을 부여하지 않도록 보강.
+- Phase 4.3 complete: `isActiveMember`가 `ACTIVE` 상태와 `expiresAt` 만료 여부를 확인하도록 갱신.
+- Phase 4.4 complete: 크리에이터 정산 쿼리를 `Settlement` 기준으로 확장해 멤버십/포스트/계약/선착순 프로그램/작품 정산을 한 목록에서 조회. `/api/creator/settlements` 추가.
+- Phase 4.5 complete: 크리에이터 정산 화면이 `PENDING`, `AVAILABLE`, `RELEASED`, `ON_HOLD`, `ADJUSTED` 상태와 sourceType을 표시하도록 갱신.
+- Phase 4.6 complete: SPEC-015 관련 Vitest 138개, TypeScript `tsc --noEmit`, ESLint 통과.
+- Phase 5.1 complete: 팬 결제 내역 쿼리를 계약 중심에서 멤버십/포스트/계약/선착순 프로그램/작품 결제 전체 조회로 확장.
+- Phase 5.2 complete: 팬 결제 페이지가 결제 원천별 제목/종류/상태를 표시하고, 작품 주문에는 주문 상태·배송 정보·문제 신고 진입점을 노출하도록 갱신.
+- Phase 5.3 complete: 공개 크리에이터 스튜디오에 `작품` 탭과 작품 구매 폼 추가. 구매 시 수령자/연락처/배송지를 받아 `purchaseArtwork` 서비스로 연결.
+- Phase 5.4 complete: 팬 작품 주문 상세 페이지(`/artwork-orders/:id`) 추가. 주문/배송/결제 상태와 문제 신고 진입점 제공.
+- Phase 5.5 complete: 크리에이터 작품 주문 관리 페이지(`/dashboard/creator/artwork-orders`) 추가. 결제 완료/준비 중 주문에 송장 입력 발송 처리 UI 제공.
+- Phase 5.6 complete: SPEC-015 관련 Vitest 173개, TypeScript `tsc --noEmit`, ESLint 통과. 이미지 lint 경고 제거 후 스튜디오 컴포넌트 테스트 20개 재통과.
+- Phase 6.1 complete: `CreatorWork` 등록/조회 API(`/api/creator/works`) 추가. 제목, 유형, 설명, 이미지/외부 링크, 시작/종료일 검증 포함.
+- Phase 6.2 complete: `Artwork` 등록/조회 API(`/api/creator/artworks`) 추가. 가격/재고/공개 상태 검증 포함.
+- Phase 6.3 complete: 크리에이터 작품 관리 화면(`/dashboard/creator/artworks`) 추가. 기존 작업물 등록 폼, 판매 작품 등록 폼, 등록 목록을 한 화면에서 제공.
+- Phase 6.4 complete: 공개 크리에이터 스튜디오 소개 탭에 기존 작업물 이력 노출. 공개 작품 탭은 판매 중인 작품만 노출 유지.
+- Phase 6.5 complete: 크리에이터 헤더 메뉴에 `작품 관리` 진입점 추가.
+- Phase 6.6 complete: SPEC-015 관련 Vitest 181개, TypeScript `tsc --noEmit`, ESLint 통과.
+- Phase 6.7 complete: 등록된 작업물 세부 API(`/api/creator/works/:id`) 추가. 크리에이터 소유권 확인 후 수정/삭제 지원.
+- Phase 6.8 complete: 등록된 판매 작품 세부 API(`/api/creator/artworks/:id`) 추가. 수정/공개/숨김/삭제 지원, 주문 이력이 있는 작품 삭제는 주문/정산 보존을 위해 `HIDDEN` 처리.
+- Phase 6.9 complete: 작품 관리 화면에 등록 후 새로고침, 작업물 수정/삭제, 판매 작품 수정/공개/숨김/삭제 액션 추가.
+- Phase 6.10 complete: 신규 세부 라우트 테스트 18개, SPEC-015 관련 Vitest 72개 파일/529개 테스트, TypeScript `tsc --noEmit`, ESLint 통과.
+- Phase 6.11 complete: 크리에이터 판매 작품 목록 쿼리에 주문 수(`_count.orders`) 포함. 관리 카드에서 주문 이력과 삭제 정책(`삭제 가능`/`삭제 시 숨김 처리`)을 사전 노출.
+- Phase 6.12 complete: 주문 이력이 있는 작품 삭제 확인 문구를 `삭제 대신 숨김 처리`로 구체화. 정책 표시 컴포넌트 테스트 추가.
+- Phase 6.13 complete: 타겟 테스트 7개, SPEC-015 관련 Vitest 73개 파일/532개 테스트, TypeScript `tsc --noEmit`, ESLint 통과.
+- Phase 6.14 complete: 크리에이터 전용 이미지 업로드 API(`/api/creator/uploads`) 추가. JPG/PNG/WebP/GIF, 5MB 제한, `public/uploads/creator-assets` 저장 후 공개 URL 반환.
+- Phase 6.15 complete: `ImageUploadField` 추가. 작업물/판매 작품 생성·수정 폼에서 URL 텍스트 입력 대신 업로드, 미리보기, 제거 UX 제공.
+- Phase 6.16 complete: 업로드 API·업로드 필드 테스트 7개 추가. 타겟 테스트 10개, SPEC-015 관련 Vitest 75개 파일/539개 테스트, TypeScript `tsc --noEmit`, ESLint 통과.
+- Phase 6.17 complete: 팬 작품 수령 완료 API(`/api/artwork-orders/:id/received`) 추가. 주문 `RECEIVED`, 배송 완료 시각, 작품 정산 `AVAILABLE`, 크리에이터 알림 처리.
+- Phase 6.18 complete: 크리에이터 환불 API(`/api/artwork-orders/:id/refund`) 추가. 주문 `REFUNDED`, 결제 `REFUNDED`, 정산 `ADJUSTED`, 환불 차감 조정 기록, 미발송 주문 재고 복구 처리.
+- Phase 6.19 complete: 크리에이터 이슈 해결 API(`/api/artwork-orders/:id/issues/resolve`) 추가. 열린 이슈 `RESOLVED`, 주문 `RECEIVED`, 정산 `AVAILABLE`, 팬 알림 처리.
+- Phase 6.20 complete: 팬 주문 상세에 수령 완료 버튼, 크리에이터 작품 주문 관리에 이슈 해결/환불 처리 액션 추가.
+- Phase 6.21 complete: 신규 서비스·라우트 테스트 12개 추가. SPEC-015 관련 Vitest 76개 파일/547개 테스트, TypeScript `tsc --noEmit`, ESLint 통과.
+- Remaining estimate: 약 5~8%. 남은 범위는 시드 데이터/데모 계정 정리, 실제 브라우저 화면 QA, 상태 라벨 한글화 같은 최종 polish 중심.
+- Next: 화면 QA 및 데모 데이터 정리

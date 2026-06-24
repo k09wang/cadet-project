@@ -23,6 +23,7 @@ type PostForPurchase = {
   id: string;
   creatorProfileId: string;
   visibility: string;
+  status: string;
   priceKrw: number | null;
   creatorProfile: { userId: string } | null;
 };
@@ -44,12 +45,18 @@ export async function purchasePost(
       id: true,
       creatorProfileId: true,
       visibility: true,
+      status: true,
       priceKrw: true,
       creatorProfile: { select: { userId: true } },
     },
   })) as PostForPurchase | null;
 
   if (!post) {
+    return { ok: false, status: 404, error: "Post not found" };
+  }
+
+  // 임시저장(DRAFT) 포스트는 구매 불가.
+  if (post.status !== "PUBLISHED") {
     return { ok: false, status: 404, error: "Post not found" };
   }
 

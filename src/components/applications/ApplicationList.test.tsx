@@ -49,98 +49,43 @@ describe("ApplicationList (FR-002, AC-003, AC-004)", () => {
 
     expect(screen.getByText("김철수")).toBeTruthy();
     expect(screen.getByText("이영희")).toBeTruthy();
-    // 상태 배지 확인
-    expect(screen.getByText("대기 중")).toBeTruthy();
-    // ACCEPTED 상태 배지도 표시되어야 함
-    const acceptedBadges = screen.getAllByText("수락");
-    expect(acceptedBadges.length).toBeGreaterThan(0);
+    expect(screen.getByText("신청 대기")).toBeTruthy();
+    expect(screen.getByText("확정")).toBeTruthy();
   });
 
-  it("PENDING 상태의 신청에 수락/거절 버튼을 렌더링한다", () => {
+  it("PENDING 상태의 신청에는 심사 버튼을 렌더링하지 않는다", () => {
     render(<ApplicationList programId="prog1" applications={mockApplications} />);
 
-    // 철수의 신청(PENDING)은 버튼이 있어야 함
     expect(screen.getByText("김철수")).toBeTruthy();
-    // 전체 버튼 수 확인 (PENDING 신청에는 수락/거절 2개)
-    const buttons = screen.getAllByRole("button");
-    expect(buttons.length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByRole("button", { name: "수락" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "거절" })).toBeNull();
   });
 
-  it("ACCEPTED 상태의 신청에는 버튼을 렌더링하지 않는다", () => {
+  it("ACCEPTED 상태의 신청에는 멤버 제외 액션을 렌더링한다", () => {
     render(<ApplicationList programId="prog1" applications={mockApplications} />);
 
-    // 이영희의 신청은 ACCEPTED 상태이므로 그 주변에 버튼이 없어야 함
-    const 영희행 = screen.getByText("이영희").closest("div")?.closest("div");
-    const buttons = 영희행?.querySelectorAll("button");
-    expect(buttons?.length).toBe(0);
+    expect(screen.getByRole("button", { name: "멤버 제외" })).toBeTruthy();
   });
 
-  it("수락 버튼 클릭 시 fetch를 호출한다", async () => {
+  it("멤버 제외 클릭 시 remove action을 전송한다", async () => {
     (global.fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ application: {}, autoRejectedCount: 0 }),
+      json: async () => ({ id: "app2", status: "REMOVED" }),
     });
 
     render(<ApplicationList programId="prog1" applications={mockApplications} />);
 
-    // 첫 번째 버튼 클릭 (수락)
-    const buttons = screen.getAllByRole("button");
-    fireEvent.click(buttons[0]);
+    fireEvent.click(screen.getByRole("button", { name: "멤버 제외" }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        "/api/applications/app1",
+        "/api/applications/app2",
         expect.objectContaining({
           method: "PATCH",
-          body: expect.stringContaining('"action":"accept"'),
+          body: expect.stringContaining('"action":"remove"'),
         }),
       );
       expect(mockRefresh).toHaveBeenCalled();
-    });
-  });
-
-  it("자동 거절 체크박스를 선택하고 수락 시 autoRejectOthers:true를 전송한다", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ application: {}, autoRejectedCount: 2 }),
-    });
-
-    render(<ApplicationList programId="prog1" applications={mockApplications} />);
-
-    const checkbox = screen.getByLabelText(/수락 시 다른 대기 신청 자동 거절/);
-    fireEvent.click(checkbox);
-
-    const buttons = screen.getAllByRole("button");
-    fireEvent.click(buttons[0]);
-
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        "/api/applications/app1",
-        expect.objectContaining({
-          body: expect.stringContaining('"autoRejectOthers":true'),
-        }),
-      );
-    });
-  });
-
-  it("거절 버튼 클릭 시 reject action을 전송한다", async () => {
-    (global.fetch as any).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ application: {}, autoRejectedCount: 0 }),
-    });
-
-    render(<ApplicationList programId="prog1" applications={mockApplications} />);
-
-    const buttons = screen.getAllByRole("button");
-    fireEvent.click(buttons[1]); // 두 번째 버튼이 거절
-
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        "/api/applications/app1",
-        expect.objectContaining({
-          body: expect.stringContaining('"action":"reject"'),
-        }),
-      );
     });
   });
 });

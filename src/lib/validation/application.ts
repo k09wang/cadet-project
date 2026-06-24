@@ -13,13 +13,13 @@ export const applySchema = z.object({
 });
 
 /**
- * 신청 처리 입력 (FR-007, FR-008, AC-010, AC-011).
- * - accept: 신청 수락 (autoRejectOthers true면 다른 PENDING은 AUTO_REJECTED)
- * - reject: 신청 거절
+ * 신청 처리 입력.
+ * - cancel: 팬 직접 신청 취소
+ * - remove: 크리에이터가 확정 참여자 제외
  */
 export const processSchema = z.object({
-  action: z.enum(["accept", "reject"]),
-  autoRejectOthers: z.boolean().optional(),
+  action: z.enum(["cancel", "remove"]),
+  removedReason: z.string().max(500).optional(),
 });
 
 export type ApplyInput = z.infer<typeof applySchema>;

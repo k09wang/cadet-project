@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { findActiveApplication } from "@/lib/queries/applications";
 import { buildNotificationMessage, notificationHref } from "@/lib/notification-types";
+import { resolvePaymentProvider } from "@/lib/payment/provider";
 
 /**
  * 프로그램 신청 서비스 (SPEC-005 FR-001~FR-009, FR-012, AC-001~AC-012).
@@ -17,6 +18,11 @@ export type ApplicationServiceContext = {
 export type ApplicationServiceResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: 400 | 403 | 404 | 409 | 500; error: string };
+
+const FEE_RATE = 0.1;
+const PROGRAM_PAYMENT_RESERVATION_MINUTES = 15;
+
+class SeatUnavailableError extends Error {}
 
 function ensureCreator(
   ctx: ApplicationServiceContext,
@@ -40,10 +46,22 @@ export async function applyToProgram(
   programId: string,
   userId: string,
   message?: string,
-): Promise<ApplicationServiceResult<{ id: string }>> {
+): Promise<
+  ApplicationServiceResult<{
+    id: string;
+    status: string;
+    paymentId: string | null;
+    settlementId: string | null;
+    amount: number;
+    provider: string | null;
+    merchantUid: string | null;
+    paymentParams: Record<string, string>;
+  }>
+> {
   // 프로그램 로드
   const program = await prisma.program.findUnique({
     where: { id: programId },
+    include: { creatorProfile: { select: { userId: true } } },
   });
   if (!program || program.deletedAt) {
     return { ok: false, status: 404, error: "Program not found" };
@@ -70,44 +88,310 @@ export async function applyToProgram(
     return { ok: false, status: 409, error: "Already applied" };
   }
 
-  // 신청 생성 + 크리에이터 알림
-  const creatorProfile = await prisma.creatorProfile.findUnique({
-    where: { id: program.creatorProfileId },
-    select: { userId: true },
-  });
-  if (!creatorProfile) {
+  if (!program.creatorProfile) {
     return { ok: false, status: 404, error: "Creator profile not found" };
   }
 
-  // 신청 생성 + 크리에이터 알림을 단일 트랜잭션으로 원자화 (AC-001).
-  // 둘 중 하나라도 실패하면 롤백되어 고아(신청만 남고 알림 누락) 상태를 방지한다.
+  const amount = program.priceKrw ?? 0;
+  const isPaidProgram = amount > 0;
+  const feeKrw = Math.round(amount * FEE_RATE);
+  const payout = amount - feeKrw;
+  const provider = isPaidProgram ? resolvePaymentProvider() : null;
+  const now = new Date();
+  const paymentExpiresAt = new Date(
+    now.getTime() + PROGRAM_PAYMENT_RESERVATION_MINUTES * 60 * 1000,
+  );
+
   try {
-    const application = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
+      if (program.maxParticipants !== null) {
+        const occupiedSeats = await tx.programApplication.count({
+          where: {
+            programId,
+            OR: [
+              { status: "ACCEPTED" },
+              {
+                status: { in: ["RESERVED", "PENDING_PAYMENT"] },
+                paymentExpiresAt: { gt: now },
+              },
+            ],
+          },
+        });
+        if (occupiedSeats >= program.maxParticipants) {
+          throw new SeatUnavailableError("Program is full");
+        }
+      }
+
       const created = await tx.programApplication.create({
         data: {
           programId,
           userId,
-          status: "PENDING",
+          status: isPaidProgram ? "PENDING_PAYMENT" : "ACCEPTED",
           message,
+          paymentExpiresAt: isPaidProgram ? paymentExpiresAt : null,
         },
       });
 
-      // 크리에이터에게 알림 생성 (AC-004)
       await tx.notification.create({
         data: {
-          userId: creatorProfile.userId,
+          userId: program.creatorProfile.userId,
           type: "APPLICATION_CREATED",
           message: buildNotificationMessage("APPLICATION_CREATED", {}),
           linkUrl: notificationHref("APPLICATION_CREATED", { programId }),
         },
       });
 
-      return created;
+      if (!isPaidProgram || !provider) {
+        await tx.notification.create({
+          data: {
+            userId,
+            type: "APPLICATION_ACCEPTED",
+            message: buildNotificationMessage("APPLICATION_ACCEPTED", {}),
+            linkUrl: notificationHref("APPLICATION_ACCEPTED", { programId }),
+          },
+        });
+        return {
+          id: created.id,
+          status: created.status,
+          paymentId: null,
+          settlementId: null,
+          amount: 0,
+          provider: null,
+          merchantUid: null,
+          paymentParams: {},
+        };
+      }
+
+      const request = provider.createRequest({
+        programApplicationId: created.id,
+        amount,
+        productName: program.title,
+      });
+
+      if (provider.name !== "mock") {
+        const payment = await tx.payment.create({
+          data: {
+            programApplicationId: created.id,
+            fanUserId: userId,
+            amount,
+            feeKrw,
+            status: "PENDING",
+            provider: provider.name,
+            merchantUid: request.merchantUid,
+          },
+        });
+        await tx.notification.create({
+          data: {
+            userId,
+            type: "PROGRAM_SEAT_RESERVED",
+            message: buildNotificationMessage("PROGRAM_SEAT_RESERVED", {}),
+            linkUrl: notificationHref("PROGRAM_SEAT_RESERVED", { programId }),
+          },
+        });
+        return {
+          id: created.id,
+          status: created.status,
+          paymentId: payment.id,
+          settlementId: null,
+          amount,
+          provider: provider.name,
+          merchantUid: request.merchantUid,
+          paymentParams: request.paymentParams,
+        };
+      }
+
+      const charge = await provider.charge({ programApplicationId: created.id, amount });
+      if (!charge.success) {
+        await tx.programApplication.update({
+          where: { id: created.id },
+          data: { status: "PAYMENT_FAILED", paymentFailedAt: new Date() },
+        });
+        throw new Error("Payment charge failed");
+      }
+
+      const [updatedApplication, payment] = await Promise.all([
+        tx.programApplication.update({
+          where: { id: created.id },
+          data: { status: "ACCEPTED" },
+        }),
+        tx.payment.create({
+          data: {
+            programApplicationId: created.id,
+            fanUserId: userId,
+            amount,
+            feeKrw,
+            status: "PAID",
+            provider: provider.name,
+            providerTxId: charge.providerTxId,
+            merchantUid: request.merchantUid,
+          },
+        }),
+      ]);
+
+      const settlement = await tx.settlement.create({
+        data: {
+          paymentId: payment.id,
+          sourceType: "PROGRAM",
+          sourceId: programId,
+          grossAmount: amount,
+          feeKrw,
+          payout,
+          status: "PENDING",
+        },
+      });
+
+      await tx.notification.create({
+        data: {
+          userId,
+          type: "PROGRAM_PAYMENT_PAID",
+          message: buildNotificationMessage("PROGRAM_PAYMENT_PAID", {}),
+          linkUrl: notificationHref("PROGRAM_PAYMENT_PAID", { programId }),
+        },
+      });
+
+      return {
+        id: updatedApplication.id,
+        status: updatedApplication.status,
+        paymentId: payment.id,
+        settlementId: settlement.id,
+        amount,
+        provider: provider.name,
+        merchantUid: request.merchantUid,
+        paymentParams: request.paymentParams,
+      };
     });
 
-    return { ok: true, data: { id: application.id } };
-  } catch {
+    return { ok: true, data: result };
+  } catch (err) {
+    if (err instanceof SeatUnavailableError) {
+      return { ok: false, status: 409, error: "Program is full" };
+    }
     return { ok: false, status: 500, error: "Application creation failed" };
+  }
+}
+
+export async function cancelProgramApplication(
+  applicationId: string,
+  userId: string,
+): Promise<ApplicationServiceResult<{ id: string; status: string }>> {
+  const application = await prisma.programApplication.findUnique({
+    where: { id: applicationId },
+    include: { payment: { include: { settlement: true } } },
+  });
+  if (!application) {
+    return { ok: false, status: 404, error: "Application not found" };
+  }
+  if (application.userId !== userId) {
+    return { ok: false, status: 403, error: "Forbidden: only the applicant can cancel" };
+  }
+  if (!["ACCEPTED", "RESERVED", "PENDING_PAYMENT"].includes(application.status)) {
+    return { ok: false, status: 400, error: "Application cannot be cancelled" };
+  }
+
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      const cancelled = await tx.programApplication.update({
+        where: { id: applicationId },
+        data: { status: "CANCELLED", cancelledAt: new Date() },
+      });
+      if (application.payment?.status === "PAID") {
+        await tx.payment.update({
+          where: { id: application.payment.id },
+          data: { status: "REFUNDED" },
+        });
+        if (application.payment.settlement) {
+          await tx.settlement.update({
+            where: { id: application.payment.settlement.id },
+            data: {
+              status: "ON_HOLD",
+              heldReason: "Program application cancelled by fan",
+            },
+          });
+        }
+      }
+      await tx.notification.create({
+        data: {
+          userId,
+          type: "PROGRAM_APPLICATION_CANCELLED",
+          message: buildNotificationMessage("PROGRAM_APPLICATION_CANCELLED", {}),
+          linkUrl: notificationHref("PROGRAM_APPLICATION_CANCELLED", {
+            programId: application.programId,
+          }),
+        },
+      });
+      return cancelled;
+    });
+    return { ok: true, data: { id: updated.id, status: updated.status } };
+  } catch {
+    return { ok: false, status: 500, error: "Application cancellation failed" };
+  }
+}
+
+export async function removeProgramParticipant(
+  ctx: ApplicationServiceContext,
+  applicationId: string,
+  reason?: string,
+): Promise<ApplicationServiceResult<{ id: string; status: string }>> {
+  const guard = ensureCreator(ctx);
+  if (!guard.ok) return guard;
+
+  const application = await prisma.programApplication.findUnique({
+    where: { id: applicationId },
+    include: {
+      program: true,
+      payment: { include: { settlement: true } },
+    },
+  });
+  if (!application) {
+    return { ok: false, status: 404, error: "Application not found" };
+  }
+  if (application.program.creatorProfileId !== guard.data) {
+    return { ok: false, status: 403, error: "Forbidden: not the program owner" };
+  }
+  if (application.status !== "ACCEPTED") {
+    return { ok: false, status: 400, error: "Participant is not accepted" };
+  }
+
+  try {
+    const updated = await prisma.$transaction(async (tx) => {
+      const removed = await tx.programApplication.update({
+        where: { id: applicationId },
+        data: {
+          status: "REMOVED",
+          removedAt: new Date(),
+          removedReason: reason,
+        },
+      });
+      if (application.payment?.status === "PAID") {
+        await tx.payment.update({
+          where: { id: application.payment.id },
+          data: { status: "REFUNDED" },
+        });
+        if (application.payment.settlement) {
+          await tx.settlement.update({
+            where: { id: application.payment.settlement.id },
+            data: {
+              status: "ON_HOLD",
+              heldReason: reason ?? "Program participant removed by creator",
+            },
+          });
+        }
+      }
+      await tx.notification.create({
+        data: {
+          userId: application.userId,
+          type: "PROGRAM_PARTICIPANT_REMOVED",
+          message: buildNotificationMessage("PROGRAM_PARTICIPANT_REMOVED", {}),
+          linkUrl: notificationHref("PROGRAM_PARTICIPANT_REMOVED", {
+            programId: application.programId,
+          }),
+        },
+      });
+      return removed;
+    });
+    return { ok: true, data: { id: updated.id, status: updated.status } };
+  } catch {
+    return { ok: false, status: 500, error: "Participant removal failed" };
   }
 }
 

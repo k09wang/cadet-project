@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { canViewPost } from "@/lib/post-access";
 import { PostDetail } from "@/components/posts/PostDetail";
 import { LockedPostPreview } from "@/components/posts/LockedPostPreview";
+import { PostCreatedToast } from "@/components/posts/PostCreatedToast";
 
 /**
  * 포스트 상세 페이지 (SPEC-003 FR-008~011, AC-001/002/004/005, NFR-002).
@@ -13,34 +14,71 @@ import { LockedPostPreview } from "@/components/posts/LockedPostPreview";
  */
 export default async function PostPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ created?: string }>;
 }) {
-  const { id } = await params;
+  const [{ id }, resolvedSearch] = await Promise.all([
+    params,
+    searchParams ?? Promise.resolve({} as { created?: string }),
+  ]);
   const [currentUser, post] = await Promise.all([
     getCurrentUser(),
-    prisma.post.findUnique({ where: { id } }),
+    prisma.post.findUnique({
+      where: { id },
+      include: {
+        creatorProfile: {
+          select: { id: true, studioName: true, profileImageUrl: true },
+        },
+      },
+    }),
   ]);
 
   if (!post) {
     notFound();
   }
 
+  // 작성/임시저장 직후 진입 시 완료 토스트 노출.
+  const createdKind =
+    resolvedSearch?.created === "draft"
+      ? "draft"
+      : resolvedSearch?.created === "published"
+        ? "published"
+        : null;
+
+  // 임시저장(DRAFT) 포스트는 작성자 본인에게만 노출.
+  if (
+    post.status === "DRAFT" &&
+    currentUser?.creatorProfile?.id !== post.creatorProfileId
+  ) {
+    notFound();
+  }
+
   const canView = await canViewPost(currentUser, post);
+  const createdToast = createdKind ? <PostCreatedToast kind={createdKind} /> : null;
 
   if (canView) {
-    return <PostDetail post={post} />;
+    return (
+      <>
+        {createdToast}
+        <PostDetail post={post} />
+      </>
+    );
   }
 
   // [NFR-002]: 접근 거부 시 body를 전달하지 않음 — LockedPostPreview는 body prop이 없음
   return (
-    <LockedPostPreview
-      title={post.title}
-      creatorId={post.creatorProfileId}
-      isPaid={post.visibility === "PAID"}
-      postId={post.id}
-      priceKrw={post.priceKrw}
-      isLoggedIn={currentUser !== null}
-    />
+    <>
+      {createdToast}
+      <LockedPostPreview
+        title={post.title}
+        creatorId={post.creatorProfileId}
+        isPaid={post.visibility === "PAID"}
+        postId={post.id}
+        priceKrw={post.priceKrw}
+        isLoggedIn={currentUser !== null}
+      />
+    </>
   );
 }

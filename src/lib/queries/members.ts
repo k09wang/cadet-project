@@ -21,17 +21,15 @@ export function listActiveMembers(creatorProfileId: string) {
 
 /**
  * 프로그램 참여자 목록 (FR-009, AC-007).
- * ACCEPTED 신청자를 user/contract.payments와 함께 조회한다.
- * 호출자는 contract.payments로 결제 완료 여부(some status in [PAID, RELEASED])를 파생한다.
+ * ACCEPTED 신청자를 user/payment와 함께 조회한다.
+ * 호출자는 payment.status로 결제 완료 여부(PAID/RELEASED)를 파생한다.
  */
 export function listProgramParticipants(programId: string) {
   return prisma.programApplication.findMany({
     where: { programId, status: "ACCEPTED" },
     include: {
       user: { select: { id: true, name: true } },
-      contract: {
-        include: { payments: { select: { status: true } } },
-      },
+      payment: { select: { status: true } },
     },
     orderBy: { createdAt: "desc" },
   });

@@ -29,7 +29,9 @@ const ALLOWED_TRANSITIONS: Record<ProgramStatus, ProgramStatus[]> = {
   RECRUITING: ["CLOSED", "CANCELLED", "CONTRACTING"],
   CLOSED: ["RECRUITING", "CANCELLED"],
   CONTRACTING: ["IN_PROGRESS", "CANCELLED"],
-  IN_PROGRESS: [],
+  // @MX:NOTE: SPEC-013 — 에스크로 완료 승인(팬=지불자) 트리거가 모든 결제 완료 참여 승인 시 COMPLETED 전환.
+  // 서비스 계층(reviews.approveCompletion)에서만 수행 — API PATCH 경계와 분리.
+  IN_PROGRESS: ["COMPLETED"],
   COMPLETED: [],
   CANCELLED: [],
 };
@@ -45,17 +47,44 @@ export function isTransitionAllowed(from: ProgramStatus, to: ProgramStatus): boo
  * RECRUITING이고 recruitDeadline이 과거이면 CLOSED로 간주(표시)한다. DB는 변경하지 않는다.
  */
 export function effectiveStatus(
-  program: { status: ProgramStatus; recruitDeadline?: Date | null },
+  program: {
+    status: ProgramStatus;
+    recruitDeadline?: Date | string | null;
+    startDate?: Date | string | null;
+    endDate?: Date | string | null;
+  },
   now: Date = new Date(),
 ): ProgramStatus {
-  if (
-    program.status === "RECRUITING" &&
-    program.recruitDeadline &&
-    program.recruitDeadline.getTime() < now.getTime()
-  ) {
+  if (["DRAFT", "CANCELLED", "COMPLETED"].includes(program.status)) {
+    return program.status;
+  }
+
+  const endDate = toDate(program.endDate);
+  if (endDate && endDate.getTime() < now.getTime()) {
+    return "COMPLETED";
+  }
+
+  const startDate = toDate(program.startDate);
+  if (startDate && startDate.getTime() <= now.getTime()) {
+    return "IN_PROGRESS";
+  }
+
+  const recruitDeadline = toDate(program.recruitDeadline);
+  if (recruitDeadline && recruitDeadline.getTime() < now.getTime()) {
     return "CLOSED";
   }
-  return program.status;
+
+  if (["CLOSED", "CONTRACTING", "IN_PROGRESS"].includes(program.status)) {
+    return program.status;
+  }
+
+  return "RECRUITING";
+}
+
+function toDate(value: Date | string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 /** 공개 노출 대상인지 검사한다 (soft-delete 제외 + 공개 상태) (FR-003, FR-008, FR-009). */

@@ -1,0 +1,31 @@
+[shell_environment_policy]
+inherit = "core"
+
+[shell_environment_policy.set]
+CLAUDE_CODE_AUTO_COMPACT_WINDOW = "1000000"
+ANTHROPIC_DEFAULT_HAIKU_MODEL = "glm-5.2[1m]"
+ANTHROPIC_DEFAULT_SONNET_MODEL = "glm-5.2[1m]"
+ANTHROPIC_DEFAULT_OPUS_MODEL = "opus-4-8[1m]"
+
+[mcp_servers.context7]
+command = "/bin/bash"
+args = [
+    "-l",
+    "-c",
+    "exec npx -y @upstash/context7-mcp@latest",
+]
+
+[mcp_servers.moai-lsp]
+command = "moai"
+args = [
+    "mcp",
+    "lsp",
+]
+
+[mcp_servers.sequential-thinking]
+command = "/bin/bash"
+args = [
+    "-l",
+    "-c",
+    "exec npx -y @modelcontextprotocol/server-sequential-thinking",
+]

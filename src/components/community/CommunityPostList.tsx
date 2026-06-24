@@ -2,7 +2,7 @@
  * 커뮤니티 글 목록 (SPEC-007 FR-003, AC-002, AC-004).
  * 제목, 작성자명, 작성일(ko locale), 본문을 최신순으로 렌더링한다.
  */
-import { formatDateTime } from "@/lib/format";
+import { CommentItem } from "@/components/community/CommentItem";
 interface CommunityPost {
   id: string;
   title: string;
@@ -18,7 +18,7 @@ interface CommunityPostListProps {
 export function CommunityPostList({ posts }: CommunityPostListProps) {
   if (posts.length === 0) {
     return (
-      <p className="text-center text-sm text-muted-foreground py-8">
+      <p className="py-8 text-center text-sm text-text-muted">
         아직 글이 없습니다.
       </p>
     );
@@ -27,16 +27,16 @@ export function CommunityPostList({ posts }: CommunityPostListProps) {
   return (
     <div className="space-y-4">
       {posts.map((post) => (
-        <article key={post.id} className="border rounded-lg p-4 space-y-2">
-          <h3 className="font-medium">{post.title}</h3>
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-            {post.content}
-          </p>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{post.author.name}</span>
-            <span aria-hidden>·</span>
-            <span>{formatDateTime(post.createdAt)}</span>
-          </div>
+        <article
+          key={post.id}
+          className="space-y-3 rounded-[var(--radius-card)] border border-border-default bg-white p-4"
+        >
+          <h3 className="text-sm font-bold text-text-default">{post.title}</h3>
+          <CommentItem
+            authorName={post.author.name}
+            body={post.content}
+            createdAt={post.createdAt}
+          />
         </article>
       ))}
     </div>

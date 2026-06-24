@@ -90,6 +90,26 @@ export default async function CreatorDashboardPage() {
         >
           멤버 관리
         </Link>
+        <Link
+          href="/dashboard/creator/memberships"
+          className="rounded-lg border p-4 text-sm font-medium hover:bg-muted"
+        >
+          멤버십 관리
+        </Link>
+        <Link
+          href="/dashboard/creator/settlements"
+          className="rounded-lg border p-4 text-sm font-medium hover:bg-muted"
+        >
+          정산 관리
+        </Link>
+        {profile ? (
+          <Link
+            href={`/creators/${profile.id}?tab=community`}
+            className="rounded-lg border p-4 text-sm font-medium hover:bg-muted"
+          >
+            내 커뮤니티
+          </Link>
+        ) : null}
       </section>
     </div>
   );

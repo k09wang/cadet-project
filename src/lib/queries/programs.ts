@@ -16,6 +16,8 @@ export interface PublicProgramFilter {
   priceMax?: number;
   /** 제목/설명 부분 일치 검색어. */
   q?: string;
+  /** 정렬 기준. 기본 최신순. */
+  sort?: "latest" | "price_asc" | "price_desc";
 }
 
 /** 공개 목록(/programs) — DRAFT/CANCELLED 및 soft-delete 제외 (FR-003). */
@@ -23,6 +25,13 @@ export function listPublicPrograms(opts?: PublicProgramFilter) {
   const statusFilter = opts?.status && PUBLIC_PROGRAM_STATUSES.includes(opts.status)
     ? opts.status
     : { in: PUBLIC_PROGRAM_STATUSES };
+
+  const orderBy =
+    opts?.sort === "price_asc"
+      ? { priceKrw: "asc" as const }
+      : opts?.sort === "price_desc"
+        ? { priceKrw: "desc" as const }
+        : { createdAt: "desc" as const };
 
   return prisma.program.findMany({
     where: {
@@ -41,7 +50,7 @@ export function listPublicPrograms(opts?: PublicProgramFilter) {
           }
         : {}),
     },
-    orderBy: { createdAt: "desc" },
+    orderBy,
     include: {
       creatorProfile: { select: { id: true, studioName: true } },
     },

@@ -21,17 +21,17 @@ describe("CompleteButton (FR-001, AC-001)", () => {
   it("버튼을 렌더한다", () => {
     render(<CompleteButton programId="prog-1" />);
     expect(
-      screen.getByRole("button", { name: "프로그램 완료 처리" }),
+      screen.getByRole("button", { name: "참여자에게 납품 요청" }),
     ).toBeTruthy();
   });
 
-  it("클릭 시 POST /api/programs/:id/complete 호출 후 완료 메시지 (AC-001)", async () => {
+  it("클릭 시 POST /api/programs/:id/complete 호출 후 납품 요청 메시지", async () => {
     render(<CompleteButton programId="prog-1" />);
-    fireEvent.click(screen.getByRole("button", { name: "프로그램 완료 처리" }));
+    fireEvent.click(screen.getByRole("button", { name: "참여자에게 납품 요청" }));
 
     await waitFor(() => {
       expect(
-        screen.getByText("프로그램이 완료 처리되었습니다."),
+        screen.getByText(/참여자에게 납품 요청을 보냈습니다/),
       ).toBeTruthy();
     });
     const fetchMock = vi.mocked(fetch);
@@ -46,7 +46,7 @@ describe("CompleteButton (FR-001, AC-001)", () => {
       json: async () => ({ error: "Program is not IN_PROGRESS" }),
     } as Response);
     render(<CompleteButton programId="prog-1" />);
-    fireEvent.click(screen.getByRole("button", { name: "프로그램 완료 처리" }));
+    fireEvent.click(screen.getByRole("button", { name: "참여자에게 납품 요청" }));
 
     await waitFor(() => {
       expect(screen.getByText("Program is not IN_PROGRESS")).toBeTruthy();

@@ -36,7 +36,7 @@ export default async function ParticipantsPage({
         </p>
       </header>
 
-      <ParticipantList participants={participants} />
+      <ParticipantList participants={participants} programId={id} />
     </main>
   );
 }

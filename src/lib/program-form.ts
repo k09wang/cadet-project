@@ -15,8 +15,6 @@ export function parseProgramCreateForm(formData: FormData): Record<string, unkno
     title: str(formData.get("title")),
     priceKrw: Number(formData.get("priceKrw")),
   };
-  const status = str(formData.get("status"));
-  if (status) obj.status = status;
   const description = str(formData.get("description"));
   if (description) obj.description = description;
   const category = str(formData.get("category"));
@@ -38,7 +36,6 @@ export function parseProgramUpdateForm(formData: FormData): Record<string, unkno
   return {
     title: str(formData.get("title")),
     priceKrw: formData.get("priceKrw") ? Number(formData.get("priceKrw")) : undefined,
-    status: str(formData.get("status")),
     description: str(formData.get("description")) ?? null,
     category: str(formData.get("category")) ?? null,
     startDate: str(formData.get("startDate")) ?? null,

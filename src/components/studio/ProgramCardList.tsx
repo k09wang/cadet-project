@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { formatKrw } from "@/components/studio/MembershipPlanCardList";
 
 /**
@@ -16,32 +17,32 @@ export interface ProgramCardListProps {
 
 export function ProgramCardList({ programs }: ProgramCardListProps) {
   if (programs.length === 0) {
-    return <p className="text-sm text-muted-foreground">아직 프로그램이 없습니다.</p>;
+    return <p className="text-sm text-text-muted">아직 프로그램이 없습니다.</p>;
   }
   return (
-    <ul className="space-y-2">
+    <ul className="grid gap-3">
       {programs.map((program) => (
         <li key={program.id}>
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
-                <CardTitle>{program.title}</CardTitle>
+                <CardTitle className="line-clamp-2">{program.title}</CardTitle>
                 {program.category ? (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                  <Badge variant="program">
                     {program.category}
-                  </span>
+                  </Badge>
                 ) : null}
               </div>
             </CardHeader>
             {program.description ? (
               <CardContent>
-                <p className="line-clamp-3 text-sm text-muted-foreground">
+                <p className="line-clamp-3 text-sm leading-5 text-text-muted">
                   {program.description}
                 </p>
               </CardContent>
             ) : null}
             <CardContent>
-              <p className="text-sm font-medium">{formatKrw(program.priceKrw)}</p>
+              <p className="text-sm font-bold text-text-default">{formatKrw(program.priceKrw)}</p>
             </CardContent>
           </Card>
         </li>

@@ -17,6 +17,11 @@ describe("notification-types (NFR-005)", () => {
       expect(NOTIFICATION_TYPES).toContain("PAYMENT_COMPLETED");
       // SPEC-008 FR-002
       expect(NOTIFICATION_TYPES).toContain("REVIEW_REQUESTED");
+      // SPEC-015
+      expect(NOTIFICATION_TYPES).toContain("MEMBERSHIP_PAYMENT_PAID");
+      expect(NOTIFICATION_TYPES).toContain("PROGRAM_SEAT_RESERVED");
+      expect(NOTIFICATION_TYPES).toContain("ARTWORK_ORDER_PAID");
+      expect(NOTIFICATION_TYPES).toContain("SETTLEMENT_AVAILABLE");
     });
   });
 
@@ -98,6 +103,32 @@ describe("notification-types (NFR-005)", () => {
       expect(notificationHref("PAYMENT_COMPLETED", {})).toBeNull();
     });
 
+    it("멤버십 결제 알림은 팬 멤버십 관리로 연결", () => {
+      const result = notificationHref("MEMBERSHIP_PAYMENT_PAID", {
+        membershipId: "membership-1",
+      });
+      expect(result).toBe("/dashboard/fan/memberships");
+    });
+
+    it("프로그램 결제 알림은 프로그램 상세로 연결", () => {
+      const result = notificationHref("PROGRAM_PAYMENT_PAID", { programId: "prog-1" });
+      expect(result).toBe("/programs/prog-1");
+    });
+
+    it("작품 주문 알림은 작품 주문 상세로 연결", () => {
+      const result = notificationHref("ARTWORK_ORDER_PAID", {
+        artworkOrderId: "order-1",
+      });
+      expect(result).toBe("/artwork-orders/order-1");
+    });
+
+    it("정산 알림은 크리에이터 정산 화면으로 연결", () => {
+      const result = notificationHref("SETTLEMENT_AVAILABLE", {
+        settlementId: "settlement-1",
+      });
+      expect(result).toBe("/dashboard/creator/settlements/settlement-1");
+    });
+
     it("REVIEW_REQUESTED는 프로그램 상세로 연결 (SPEC-008 FR-011)", () => {
       const result = notificationHref("REVIEW_REQUESTED", { programId: "prog-1" });
       expect(result).toBe("/programs/prog-1");
@@ -154,6 +185,18 @@ describe("notification-types (NFR-005)", () => {
     it("REVIEW_REQUESTED 메시지 생성 (SPEC-008 FR-002)", () => {
       const result = buildNotificationMessage("REVIEW_REQUESTED", {});
       expect(result).toBe("프로그램이 완료되었습니다. 리뷰를 작성해 보세요.");
+    });
+
+    it("SPEC-015 멤버십/작품/정산 메시지 생성", () => {
+      expect(buildNotificationMessage("MEMBERSHIP_PAYMENT_PAID", {})).toBe(
+        "멤버십 결제가 완료되었습니다.",
+      );
+      expect(buildNotificationMessage("ARTWORK_SHIPPED", {})).toBe(
+        "작품이 발송되었습니다.",
+      );
+      expect(buildNotificationMessage("SETTLEMENT_ON_HOLD", {})).toBe(
+        "정산이 보류되었습니다. 사유를 확인해 주세요.",
+      );
     });
   });
 });

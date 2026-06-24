@@ -52,6 +52,11 @@ export default async function ProgramDetailPage({
             alreadyReviewed: eligibility.alreadyReviewed,
             reviews,
             avgRating,
+            activeApplicationId: activeApplication?.id ?? null,
+            deliveryRequested: !!activeApplication?.deliveryRequestedAt,
+            completionApproved: !!activeApplication?.completionApprovedAt,
+            participantName: user?.name ?? null,
+            amountKrw: activeApplication?.payment?.amount ?? null,
           },
         }}
       />

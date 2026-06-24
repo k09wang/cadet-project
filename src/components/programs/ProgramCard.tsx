@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ProgramStatus } from "@prisma/client";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { formatKrw } from "@/components/studio/MembershipPlanCardList";
 import { ProgramStatusBadge } from "@/components/programs/ProgramStatusBadge";
 import { effectiveStatus } from "@/lib/program-status";
@@ -27,34 +29,42 @@ export function ProgramCard({ program }: { program: ProgramCardItem }) {
   const status = effectiveStatus({
     status: program.status,
     recruitDeadline: program.recruitDeadline ? new Date(program.recruitDeadline) : null,
+    startDate: program.startDate ? new Date(program.startDate) : null,
+    endDate: program.endDate ? new Date(program.endDate) : null,
   });
   const period = formatProgramPeriod(program.startDate, program.endDate);
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <div className="flex items-center justify-between gap-2">
-          <CardTitle>
-            <Link href={`/programs/${program.id}`} className="hover:underline">
+          <CardTitle className="line-clamp-2">
+            <Link href={`/programs/${program.id}`} className="transition-colors hover:text-brand-primary-pressed">
               {program.title}
             </Link>
           </CardTitle>
           <ProgramStatusBadge status={status} />
         </div>
         {program.creatorProfile ? (
-          <p className="text-xs text-muted-foreground">{program.creatorProfile.studioName}</p>
+          <p className="text-xs text-text-muted">{program.creatorProfile.studioName}</p>
         ) : null}
       </CardHeader>
-      <CardContent className="space-y-1">
+      <CardContent className="space-y-2">
         {program.category ? (
-          <span className="inline-block rounded-full bg-muted px-2 py-0.5 text-xs">
+          <Badge variant="program" className="w-fit">
             {program.category}
-          </span>
+          </Badge>
         ) : null}
-        {period ? <p className="text-xs text-muted-foreground">{period}</p> : null}
+        {period ? <p className="text-xs text-text-muted">{period}</p> : null}
       </CardContent>
-      <CardFooter>
-        <span className="font-medium">{formatKrw(program.priceKrw)}</span>
+      <CardFooter className="flex items-center justify-between gap-2">
+        <span className="text-sm font-bold text-text-default">{formatKrw(program.priceKrw)}</span>
+        <Link
+          href={`/programs/${program.id}`}
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          자세히 보기
+        </Link>
       </CardFooter>
     </Card>
   );

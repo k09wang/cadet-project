@@ -1,0 +1,1333 @@
+{
+  "base": "http://localhost:3000",
+  "startedAt": "2026-06-19T12:10:19.835Z",
+  "sessions": [
+    {
+      "name": "anon",
+      "entries": [
+        {
+          "label": "home",
+          "requestedUrl": "/",
+          "status": 200,
+          "finalUrl": "/",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "ArtBridge",
+            "links": [
+              {
+                "h": "/login",
+                "t": "시작하기"
+              },
+              {
+                "h": "/creators",
+                "t": "전체 보기 →"
+              },
+              {
+                "h": "/creators/cmqkfw24f00069vm2pxyhet6r",
+                "t": "신진작가 스튜디오\n회화\n\n현대 미술 작가 데모 스튜디오."
+              },
+              {
+                "h": "/creators/cmqkfw24f00079vm2991qje4s",
+                "t": "조각공방 스튜디오\n조각\n\n입체 조각과 설치 미술을 다루는 데모 스튜디오."
+              },
+              {
+                "h": "/programs",
+                "t": "전체 보기 →"
+              },
+              {
+                "h": "/programs/demo2-program-1",
+                "t": "조각 워크숍"
+              },
+              {
+                "h": "/programs/demo-program-completed",
+                "t": "데모 완료 워크숍"
+              },
+              {
+                "h": "/programs/demo-program-1",
+                "t": "데모 클럽 프로그램"
+              }
+            ],
+            "btns": [],
+            "textPreview": "ArtBridge 신진 작가는 작품·멤버십·프로그램으로 수익을 만들고, 팬은 좋아하는 작가를 후원하고 클래스와 클럽에 참여하는 양면형 거래 플랫폼. 시작하기 작가 둘러보기 데모 체험 중 — 일부 기능은 제한될 수 있습니다 신진 작가 전체 보기 → 신진작가 스튜디오 회화 현대 미술 작가 데모 스튜디오. 조각공방 스튜디오 조각 입체 조각과 설치 미술을 다루는 데모 스튜디오. 진행 중인 프로그램 전체 보기 → 조각 워크숍 모집 중 조각공방 스튜디오 워크숍 ₩25,000 데모 완료 워크숍 완료 신진작가 스튜디오 워크숍 ₩20,000 데모 클럽 프로그램 완료 신진작가 스튜디오 클래스 ₩30,000",
+            "errorHints": []
+          },
+          "shot": "screenshots/anon-home.png",
+          "errors": [
+            "[console] Failed to load resource: the server responded with a status of 404 (Not Found)"
+          ]
+        },
+        {
+          "label": "login",
+          "requestedUrl": "/login",
+          "status": 200,
+          "finalUrl": "/login",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "ArtBridge",
+            "links": [
+              {
+                "h": "/signup",
+                "t": "회원가입"
+              }
+            ],
+            "btns": [
+              "로그인",
+              "크리에이터로 시작하기",
+              "팬으로 시작하기"
+            ],
+            "textPreview": "ArtBridge 계정에 로그인하거나 새로 가입하세요. 로그인 이메일 비밀번호 로그인 계정이 없나요? 회원가입 데모 계정으로 바로 시작하기 크리에이터로 시작하기 팬으로 시작하기",
+            "errorHints": []
+          },
+          "shot": "screenshots/anon-login.png",
+          "errors": []
+        },
+        {
+          "label": "signup",
+          "requestedUrl": "/signup",
+          "status": 200,
+          "finalUrl": "/signup",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "ArtBridge",
+            "links": [
+              {
+                "h": "/login",
+                "t": "로그인"
+              }
+            ],
+            "btns": [
+              "가입하기"
+            ],
+            "textPreview": "ArtBridge 몇 가지 정보만으로 바로 시작할 수 있어요. 회원가입 역할 선택 팬으로 가입 작가·프로그램을 둘러보고 참여합니다 크리에이터로 가입 스튜디오·멤버십·프로그램을 운영합니다 이름 이메일 비밀번호 가입하기 이미 계정이 있나요? 로그인",
+            "errorHints": []
+          },
+          "shot": "screenshots/anon-signup.png",
+          "errors": []
+        },
+        {
+          "label": "creators-anon",
+          "requestedUrl": "/creators",
+          "status": 200,
+          "finalUrl": "/creators",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "작가 둘러보기",
+            "links": [
+              {
+                "h": "/creators/cmqkfw24f00069vm2pxyhet6r",
+                "t": "신진작가 스튜디오\n회화\n\n현대 미술 작가 데모 스튜디오."
+              },
+              {
+                "h": "/creators/cmqkfw24f00079vm2991qje4s",
+                "t": "조각공방 스튜디오\n조각\n\n입체 조각과 설치 미술을 다루는 데모 스튜디오."
+              }
+            ],
+            "btns": [],
+            "textPreview": "작가 둘러보기 아트브릿지 작가들의 스튜디오를 둘러보세요. 신진작가 스튜디오 회화 현대 미술 작가 데모 스튜디오. 조각공방 스튜디오 조각 입체 조각과 설치 미술을 다루는 데모 스튜디오.",
+            "errorHints": []
+          },
+          "shot": "screenshots/anon-creators-anon.png",
+          "errors": []
+        },
+        {
+          "label": "programs-anon",
+          "requestedUrl": "/programs",
+          "status": 200,
+          "finalUrl": "/programs",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "프로그램 탐색",
+            "links": [
+              {
+                "h": "/programs/demo2-program-1",
+                "t": "조각 워크숍"
+              },
+              {
+                "h": "/programs/demo-program-completed",
+                "t": "데모 완료 워크숍"
+              },
+              {
+                "h": "/programs/demo-program-1",
+                "t": "데모 클럽 프로그램"
+              }
+            ],
+            "btns": [
+              "필터 적용"
+            ],
+            "textPreview": "프로그램 탐색 크리에이터가 여는 클럽·챌린지·클래스를 만나보세요. 검색 카테고리 전체 카테고리 워크숍 클래스 모집 상태 전체 상태 모집 중 계약 중 진행 중 완료 가격 전체 가격 1만원 이하 3만원 이하 5만원 이하 필터 적용 조각 워크숍 모집 중 조각공방 스튜디오 워크숍 ₩25,000 데모 완료 워크숍 완료 신진작가 스튜디오 워크숍 ₩20,000 데모 클럽 프로그램 완료 신진작가 스튜디오 클래스 ₩30,000",
+            "errorHints": []
+          },
+          "shot": "screenshots/anon-programs-anon.png",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "fan",
+      "entries": [
+        {
+          "label": "fan-home",
+          "requestedUrl": "/dashboard/fan",
+          "status": 200,
+          "finalUrl": "/dashboard/fan",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "안녕하세요, 데모 팬 1님",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "작가 둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램 탐색"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "전체 보기"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 안녕하세요, 데모 팬 1님 내 활동을 한눈에 확인하고 이어서 진행해 보세요. 신청 현황 1건 대기 0 · 수락 1 내 멤버십 2개 활성 멤버십 구독 중 결제 1건 완료 대기 중 결제 없음 둘러보기 작가 둘러보기 프로그램 탐색 관심 작가 내 멤버십 결제 내역 최근 신청 전체 보기 데모 클럽 프로그램 30,000원 ACCEPTED",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-fan-home.png",
+          "errors": []
+        },
+        {
+          "label": "creators",
+          "requestedUrl": "/creators",
+          "status": 200,
+          "finalUrl": "/creators",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "작가 둘러보기",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "내 신청·결제"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              },
+              {
+                "h": "/creators/cmqkfw24f00069vm2pxyhet6r",
+                "t": "신진작가 스튜디오\n회화\n\n현대 미술 작가 데모 스튜디오."
+              },
+              {
+                "h": "/creators/cmqkfw24f00079vm2991qje4s",
+                "t": "조각공방 스튜디오\n조각\n\n입체 조각과 설치 미술을 다루는 데모 스튜디오."
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 작가 둘러보기 아트브릿지 작가들의 스튜디오를 둘러보세요. 신진작가 스튜디오 회화 현대 미술 작가 데모 스튜디오. 조각공방 스튜디오 조각 입체 조각과 설치 미술을 다루는 데모 스튜디오.",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-creators.png",
+          "errors": []
+        },
+        {
+          "label": "creator-detail",
+          "requestedUrl": "/creators/cmqkfw24f00069vm2pxyhet6r",
+          "status": 200,
+          "finalUrl": "/creators/cmqkfw24f00069vm2pxyhet6r",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "신진작가 스튜디오",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "내 신청·결제"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              },
+              {
+                "h": "/creators/cmqkfw24f00069vm2pxyhet6r",
+                "t": "크리에이터 스튜디오 보기"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "관심 작가 ✓",
+              "소개",
+              "포스트",
+              "멤버십",
+              "클럽",
+              "커뮤니티"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 신진작가 스튜디오 회화 관심 작가 ✓ 현대 미술 작가 데모 스튜디오. Instagram Website 소개 포스트 멤버십 클럽 커뮤니티 현대 미술 작가 데모 스튜디오. 평점 4.5/ 5.0 · 리뷰 2개 크리에이터 스튜디오 보기",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-creator-detail.png",
+          "errors": []
+        },
+        {
+          "label": "programs",
+          "requestedUrl": "/programs",
+          "status": 200,
+          "finalUrl": "/programs",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "프로그램 탐색",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "내 신청·결제"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              },
+              {
+                "h": "/programs/demo2-program-1",
+                "t": "조각 워크숍"
+              },
+              {
+                "h": "/programs/demo-program-completed",
+                "t": "데모 완료 워크숍"
+              },
+              {
+                "h": "/programs/demo-program-1",
+                "t": "데모 클럽 프로그램"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "필터 적용"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 프로그램 탐색 크리에이터가 여는 클럽·챌린지·클래스를 만나보세요. 검색 카테고리 전체 카테고리 워크숍 클래스 모집 상태 전체 상태 모집 중 계약 중 진행 중 완료 가격 전체 가격 1만원 이하 3만원 이하 5만원 이하 필터 적용 조각 워크숍 모집 중 조각공방 스튜디오 워크숍 ₩25,000 데모 완료 워크숍 완료 신진작가 스튜디오 워크숍 ₩20,000 데모 클럽 프로그램 완료 신진작가 스튜디오 클래스 ₩30,000",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-programs.png",
+          "errors": []
+        },
+        {
+          "label": "program-detail",
+          "requestedUrl": "/programs/demo2-program-1",
+          "status": 200,
+          "finalUrl": "/programs/demo2-program-1",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "조각 워크숍",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "내 신청·결제"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              },
+              {
+                "h": "/creators/cmqkfw24f00079vm2991qje4s",
+                "t": "조각공방 스튜디오"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "참여 신청"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 조각 워크숍 모집 중 조각공방 스튜디오 두 번째 크리에이터 데모 프로그램 가격 ₩25,000 카테고리 워크숍 모집 마감일 2026. 07. 10. 모집 인원 8명 메시지 (선택) 참여 신청 리뷰 아직 리뷰가 없습니다.",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-program-detail.png",
+          "errors": []
+        },
+        {
+          "label": "program-completed",
+          "requestedUrl": "/programs/demo-program-completed",
+          "status": 200,
+          "finalUrl": "/programs/demo-program-completed",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "데모 완료 워크숍",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "내 신청·결제"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              },
+              {
+                "h": "/creators/cmqkfw24f00069vm2pxyhet6r",
+                "t": "신진작가 스튜디오"
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 데모 완료 워크숍 완료 신진작가 스튜디오 이미 완료된 데모 프로그램 — 리뷰 집계용. 가격 ₩20,000 카테고리 워크숍 모집 마감일 2026. 06. 12. 모집 인원 8명 현재 모집 중이 아닙니다. 리뷰 평균 평점 4.5 · 2개 데모 팬 2 ★★★★★ 정말 만족스럽습니다! 소통이 좋아요 다시 참여하고 싶어요 데모 팬 1 ★★★★ 체계적이고 유익했어요. 구성이 알차요 피드백이 유용해요",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-program-completed.png",
+          "errors": []
+        },
+        {
+          "label": "fan-bookmarks",
+          "requestedUrl": "/dashboard/fan/bookmarks",
+          "status": 200,
+          "finalUrl": "/dashboard/fan/bookmarks",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "관심 작가",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "내 신청·결제"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              },
+              {
+                "h": "/creators/cmqkfw24f00069vm2pxyhet6r",
+                "t": "신진작가 스튜디오\n회화\n\n현대 미술 작가 데모 스튜디오."
+              },
+              {
+                "h": "/creators/cmqkfw24f00079vm2991qje4s",
+                "t": "조각공방 스튜디오\n조각\n\n입체 조각과 설치 미술을 다루는 데모 스튜디오."
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 관심 작가 북마크한 작가 목록입니다. 신진작가 스튜디오 회화 현대 미술 작가 데모 스튜디오. 조각공방 스튜디오 조각 입체 조각과 설치 미술을 다루는 데모 스튜디오.",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-fan-bookmarks.png",
+          "errors": []
+        },
+        {
+          "label": "fan-memberships",
+          "requestedUrl": "/dashboard/fan/memberships",
+          "status": 200,
+          "finalUrl": "/dashboard/fan/memberships",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "내 멤버십",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "내 신청·결제"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 내 멤버십 가입한 멤버십 목록입니다. 조각공방 스튜디오 조각공방 멤버십 2026. 06. 19. 가입 신진작가 스튜디오 브론즈 멤버십 2026. 06. 19. 가입",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-fan-memberships.png",
+          "errors": []
+        },
+        {
+          "label": "fan-payments",
+          "requestedUrl": "/dashboard/fan/payments",
+          "status": 200,
+          "finalUrl": "/dashboard/fan/payments",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "계약 진행",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "내 신청·결제"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              },
+              {
+                "h": "/contracts/cmqkfwfqe000b9vm2i58vn9hm",
+                "t": "결제 완료 →"
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 계약 진행 데모 클럽 프로그램 ₩30,000 결제 완료 → 결제 내역 데모 클럽 프로그램 ₩10,000 · 수수료 ₩1,000 정산 완료",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-fan-payments.png",
+          "errors": []
+        },
+        {
+          "label": "notifications",
+          "requestedUrl": "/notifications",
+          "status": 200,
+          "finalUrl": "/notifications",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "알림",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "내 신청·결제"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "전체 읽음"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 알림 전체 읽음 프로그램이 완료되었습니다. 리뷰를 작성해 보세요. 2026년 6월 19일 오후 07:55 프로그램 모집이 마감되었습니다. 2026년 6월 19일 오후 01:39 신청이 수락되었습니다. 2026년 6월 19일 오후 01:39",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-notifications.png",
+          "errors": [
+            "[pageerror] Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:\n\n- A server/client branch `if (typeof window !== 'undefined')`.\n- Variable input such as `Date.now()` or `Math.random"
+          ]
+        },
+        {
+          "label": "fan-guard-creator",
+          "requestedUrl": "/dashboard/creator",
+          "status": 200,
+          "finalUrl": "/creators",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "작가 둘러보기",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/dashboard/fan",
+                "t": "내 홈"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "내 신청·결제"
+              },
+              {
+                "h": "/notifications",
+                "t": "1"
+              },
+              {
+                "h": "/creators/cmqkfw24f00069vm2pxyhet6r",
+                "t": "신진작가 스튜디오\n회화\n\n현대 미술 작가 데모 스튜디오."
+              },
+              {
+                "h": "/creators/cmqkfw24f00079vm2991qje4s",
+                "t": "조각공방 스튜디오\n조각\n\n입체 조각과 설치 미술을 다루는 데모 스튜디오."
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 내 홈 둘러보기 프로그램 관심 작가 내 멤버십 내 신청·결제 데모 팬 1 팬 1 로그아웃 작가 둘러보기 아트브릿지 작가들의 스튜디오를 둘러보세요. 신진작가 스튜디오 회화 현대 미술 작가 데모 스튜디오. 조각공방 스튜디오 조각 입체 조각과 설치 미술을 다루는 데모 스튜디오.",
+            "errorHints": []
+          },
+          "shot": "screenshots/fan-fan-guard-creator.png",
+          "errors": []
+        }
+      ]
+    },
+    {
+      "name": "creator",
+      "entries": [
+        {
+          "label": "creator-home",
+          "requestedUrl": "/dashboard/creator",
+          "status": 200,
+          "finalUrl": "/dashboard/creator",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "크리에이터 스튜디오",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "내 프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              },
+              {
+                "h": "/dashboard/creator/edit",
+                "t": "스튜디오 편집"
+              },
+              {
+                "h": "/dashboard/creator/programs/new",
+                "t": "프로그램 만들기"
+              },
+              {
+                "h": "/dashboard/creator/members",
+                "t": "멤버 관리"
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 크리에이터 스튜디오 안녕하세요, 데모 크리에이터님. 신진작가 스튜디오 현대 미술 작가 데모 스튜디오. 카테고리 회화 Instagram https://instagram.com/artbridge_demo Website https://example.com/creator1 스튜디오 편집 포스트 작성 내 프로그램 프로그램 만들기 멤버 관리",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-home.png",
+          "errors": []
+        },
+        {
+          "label": "creator-edit",
+          "requestedUrl": "/dashboard/creator/edit",
+          "status": 200,
+          "finalUrl": "/dashboard/creator/edit",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "스튜디오 편집",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "저장"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 스튜디오 편집 스튜디오 정보를 수정하세요. 스튜디오 이름 소개글 카테고리 프로필 이미지 URL 커버 이미지 URL Instagram URL Website URL 저장",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-edit.png",
+          "errors": []
+        },
+        {
+          "label": "creator-programs",
+          "requestedUrl": "/dashboard/creator/programs",
+          "status": 200,
+          "finalUrl": "/dashboard/creator/programs",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "내 클럽",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              },
+              {
+                "h": "/dashboard/creator/programs/new",
+                "t": "새 클럽 만들기"
+              },
+              {
+                "h": "/dashboard/creator/programs/demo-program-completed/applications",
+                "t": "신청 관리"
+              },
+              {
+                "h": "/dashboard/creator/programs/demo-program-completed/edit",
+                "t": "편집"
+              },
+              {
+                "h": "/dashboard/creator/programs/demo-program-1/applications",
+                "t": "신청 관리"
+              },
+              {
+                "h": "/dashboard/creator/programs/demo-program-1/edit",
+                "t": "편집"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "삭제"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 내 클럽 새 클럽 만들기 데모 완료 워크숍 완료 ₩20,000 신청 관리 편집 삭제 데모 클럽 프로그램 완료 ₩30,000 신청 관리 편집 삭제",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-programs.png",
+          "errors": []
+        },
+        {
+          "label": "creator-programs-new",
+          "requestedUrl": "/dashboard/creator/programs/new",
+          "status": 200,
+          "finalUrl": "/dashboard/creator/programs/new",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "새 클럽 만들기",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "AI 추천 받기",
+              "프로그램 만들기"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 새 클럽 만들기 AI 가격·혜택 추천 프로그램 설명 운영 기간 카테고리 타깃 독자 AI 추천 받기 제목 설명 가격 (원) 카테고리 시작일 종료일 모집 마감일 모집 인원 상태 모집 중 작성 중 프로그램 만들기",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-programs-new.png",
+          "errors": []
+        },
+        {
+          "label": "creator-program-detail",
+          "requestedUrl": "/dashboard/creator/programs/demo-program-completed",
+          "status": 200,
+          "finalUrl": "/programs/demo-program-completed",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "데모 완료 워크숍",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              },
+              {
+                "h": "/creators/cmqkfw24f00069vm2pxyhet6r",
+                "t": "신진작가 스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs/demo-program-completed/applications",
+                "t": "신청 관리"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "신청 관리"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 데모 완료 워크숍 완료 신진작가 스튜디오 이미 완료된 데모 프로그램 — 리뷰 집계용. 가격 ₩20,000 카테고리 워크숍 모집 마감일 2026. 06. 12. 모집 인원 8명 현재 모집 중이 아닙니다. 신청 관리 리뷰 평균 평점 4.5 · 2개 데모 팬 2 ★★★★★ 정말 만족스럽습니다! 소통이 좋아요 다시 참여하고 싶어요 데모 팬 1 ★★★★ 체계적이고 유익했어요. 구성이 알차요 피드백이 유용해요",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-program-detail.png",
+          "errors": []
+        },
+        {
+          "label": "creator-program-edit",
+          "requestedUrl": "/dashboard/creator/programs/demo-program-completed/edit",
+          "status": 200,
+          "finalUrl": "/dashboard/creator/programs/demo-program-completed/edit",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "클럽 수정",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "수정 저장"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 클럽 수정 제목 설명 가격 (원) 카테고리 시작일 종료일 모집 마감일 모집 인원 상태 작성 중 모집 중 모집 마감 취소 수정 저장",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-program-edit.png",
+          "errors": []
+        },
+        {
+          "label": "creator-program-applications",
+          "requestedUrl": "/dashboard/creator/programs/demo-program-completed/applications",
+          "status": 200,
+          "finalUrl": "/dashboard/creator/programs/demo-program-completed/applications",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "신청 관리",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 신청 관리 데모 완료 워크숍의 참여 신청 목록입니다. 아직 신청이 없습니다.",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-program-applications.png",
+          "errors": []
+        },
+        {
+          "label": "creator-program-participants",
+          "requestedUrl": "/dashboard/creator/programs/demo-program-completed/participants",
+          "status": 200,
+          "finalUrl": "/dashboard/creator/programs/demo-program-completed/participants",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "참여자 명단",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 참여자 명단 데모 완료 워크숍의 수락된 참여자 목록입니다. 아직 참여자가 없습니다.",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-program-participants.png",
+          "errors": []
+        },
+        {
+          "label": "creator-memberships-new",
+          "requestedUrl": "/dashboard/creator/memberships/new",
+          "status": 200,
+          "finalUrl": "/dashboard/creator/memberships/new",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "멤버십 플랜 생성",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "멤버십 플랜 생성"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 멤버십 플랜 생성 플랜 이름 월 가격 (원) 설명 (선택) 멤버십 플랜 생성",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-memberships-new.png",
+          "errors": []
+        },
+        {
+          "label": "creator-posts-new",
+          "requestedUrl": "/dashboard/creator/posts/new",
+          "status": 200,
+          "finalUrl": "/dashboard/creator/posts/new",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "새 포스트 작성",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              }
+            ],
+            "btns": [
+              "로그아웃",
+              "포스트 발행"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 새 포스트 작성 제목 본문 공개 설정 공개 멤버 전용 유료 포스트 발행",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-posts-new.png",
+          "errors": []
+        },
+        {
+          "label": "creator-members",
+          "requestedUrl": "/dashboard/creator/members",
+          "status": 200,
+          "finalUrl": "/dashboard/creator/members",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "멤버 관리",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 멤버 관리 내 스튜디오의 활성 멤버 목록입니다. 데모 팬 2 브론즈 멤버십 2026. 06. 19. 가입 데모 팬 1 브론즈 멤버십 2026. 06. 19. 가입",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-members.png",
+          "errors": []
+        },
+        {
+          "label": "creator-guard-fan",
+          "requestedUrl": "/dashboard/fan",
+          "status": 200,
+          "finalUrl": "/dashboard/fan",
+          "meta": {
+            "title": "ArtBridge",
+            "h1": "안녕하세요, 데모 크리에이터님",
+            "links": [
+              {
+                "h": "/",
+                "t": "ArtBridge"
+              },
+              {
+                "h": "/creators",
+                "t": "작가 둘러보기"
+              },
+              {
+                "h": "/dashboard/creator",
+                "t": "스튜디오"
+              },
+              {
+                "h": "/dashboard/creator/programs",
+                "t": "프로그램"
+              },
+              {
+                "h": "/dashboard/creator/posts/new",
+                "t": "포스트 작성"
+              },
+              {
+                "h": "/programs",
+                "t": "프로그램 탐색"
+              },
+              {
+                "h": "/dashboard/fan/bookmarks",
+                "t": "관심 작가"
+              },
+              {
+                "h": "/dashboard/fan/memberships",
+                "t": "내 멤버십"
+              },
+              {
+                "h": "/dashboard/fan/payments",
+                "t": "결제 내역"
+              }
+            ],
+            "btns": [
+              "로그아웃"
+            ],
+            "textPreview": "ArtBridge 둘러보기 스튜디오 프로그램 포스트 작성 데모 크리에이터 크리에이터 로그아웃 안녕하세요, 데모 크리에이터님 내 활동을 한눈에 확인하고 이어서 진행해 보세요. 신청 현황 0건 대기 0 · 수락 0 내 멤버십 1개 활성 멤버십 구독 중 결제 0건 완료 대기 중 결제 없음 둘러보기 작가 둘러보기 프로그램 탐색 관심 작가 내 멤버십 결제 내역",
+            "errorHints": []
+          },
+          "shot": "screenshots/creator-creator-guard-fan.png",
+          "errors": []
+        }
+      ]
+    }
+  ],
+  "browser": "chrome"
+}

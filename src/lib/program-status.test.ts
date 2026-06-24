@@ -37,6 +37,33 @@ describe("effectiveStatus (FR-005, AC-006)", () => {
     ).toBe("CLOSED");
   });
 
+  it("시작일이 지났고 종료일 전이면 IN_PROGRESS로 평가한다", () => {
+    expect(
+      effectiveStatus(
+        {
+          status: "RECRUITING",
+          startDate: new Date("2026-06-01"),
+          endDate: new Date("2026-07-01"),
+          recruitDeadline: new Date("2026-05-30"),
+        },
+        now,
+      ),
+    ).toBe("IN_PROGRESS");
+  });
+
+  it("종료일이 지나면 COMPLETED로 평가한다", () => {
+    expect(
+      effectiveStatus(
+        {
+          status: "IN_PROGRESS",
+          startDate: new Date("2026-05-01"),
+          endDate: new Date("2026-06-01"),
+        },
+        now,
+      ),
+    ).toBe("COMPLETED");
+  });
+
   it("RECRUITING + 마감일 미래 → RECRUITING 유지", () => {
     expect(
       effectiveStatus({ status: "RECRUITING", recruitDeadline: new Date("2026-07-01") }, now),
@@ -47,10 +74,17 @@ describe("effectiveStatus (FR-005, AC-006)", () => {
     expect(effectiveStatus({ status: "RECRUITING", recruitDeadline: null }, now)).toBe("RECRUITING");
   });
 
-  it("RECRUITING이 아닌 상태는 마감일과 무관하게 그대로 둔다", () => {
+  it("진행 중 상태에 날짜가 없으면 기존 상태를 유지한다", () => {
+    expect(effectiveStatus({ status: "IN_PROGRESS" }, now)).toBe("IN_PROGRESS");
+  });
+
+  it("완료/취소/작성 중 상태는 일정과 무관하게 그대로 둔다", () => {
     expect(
       effectiveStatus({ status: "COMPLETED", recruitDeadline: new Date("2026-06-01") }, now),
     ).toBe("COMPLETED");
+    expect(effectiveStatus({ status: "DRAFT", startDate: new Date("2026-06-01") }, now)).toBe(
+      "DRAFT",
+    );
   });
 });
 

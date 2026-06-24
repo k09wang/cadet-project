@@ -1,6 +1,6 @@
 import type { Program } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { isTransitionAllowed } from "@/lib/program-status";
+import { effectiveStatus } from "@/lib/program-status";
 import { notifyProgramClosed } from "@/lib/applications";
 import type { ProgramCreateInput, ProgramUpdateInput } from "@/lib/validation/program";
 
@@ -64,7 +64,12 @@ export async function createProgram(
     data: {
       ...input,
       creatorProfileId: guard.data,
-      status: input.status ?? "RECRUITING",
+      status: effectiveStatus({
+        status: "RECRUITING",
+        startDate: input.startDate,
+        endDate: input.endDate,
+        recruitDeadline: input.recruitDeadline,
+      }),
     },
   });
   return { ok: true, data: program };
@@ -79,15 +84,24 @@ export async function updateProgram(
   const owned = await loadOwnedProgram(ctx, id);
   if (!owned.ok) return owned;
 
-  if (input.status && !isTransitionAllowed(owned.data.status, input.status)) {
-    return { ok: false, status: 400, error: "Invalid status transition" };
-  }
+  const nextStatus = effectiveStatus({
+    status: owned.data.status,
+    startDate: input.startDate === undefined ? owned.data.startDate : input.startDate,
+    endDate: input.endDate === undefined ? owned.data.endDate : input.endDate,
+    recruitDeadline: input.recruitDeadline === undefined
+      ? owned.data.recruitDeadline
+      : input.recruitDeadline,
+  });
+  const updateData = {
+    ...input,
+    ...(nextStatus !== owned.data.status ? { status: nextStatus } : {}),
+  };
 
-  const updated = await prisma.program.update({ where: { id }, data: input });
+  const updated = await prisma.program.update({ where: { id }, data: updateData });
 
   // CLOSED 상태 전이 시 PENDING 신청자들에게 알림 (FR-010, AC-006)
   // 알림 실패해도 업데이트는 롤백하지 않음 (best-effort)
-  if (input.status === "CLOSED" && owned.data.status !== "CLOSED") {
+  if (nextStatus === "CLOSED" && owned.data.status !== "CLOSED") {
     try {
       await notifyProgramClosed(id);
     } catch (error) {

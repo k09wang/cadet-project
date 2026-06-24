@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockGetCurrentUser = vi.fn();
 vi.mock("@/lib/auth", () => ({ getCurrentUser: (...a: unknown[]) => mockGetCurrentUser(...a) }));
 
-const mockProcessApplication = vi.fn();
+const mockCancelProgramApplication = vi.fn();
+const mockRemoveProgramParticipant = vi.fn();
 vi.mock("@/lib/applications", () => ({
-  processApplication: (...a: unknown[]) => mockProcessApplication(...a),
+  cancelProgramApplication: (...a: unknown[]) => mockCancelProgramApplication(...a),
+  removeProgramParticipant: (...a: unknown[]) => mockRemoveProgramParticipant(...a),
 }));
 
 import { PATCH } from "@/app/api/applications/[id]/route";
@@ -23,14 +25,15 @@ function patchReq(body: unknown) {
 
 beforeEach(() => {
   mockGetCurrentUser.mockReset();
-  mockProcessApplication.mockReset();
+  mockCancelProgramApplication.mockReset();
+  mockRemoveProgramParticipant.mockReset();
 });
 afterEach(() => vi.clearAllMocks());
 
-describe("PATCH /api/applications/:id (FR-007~FR-009, AC-010~AC-012)", () => {
+describe("PATCH /api/applications/:id (선착순 신청 취소/멤버 제외)", () => {
   it("비로그인 401", async () => {
     mockGetCurrentUser.mockResolvedValue(null);
-    const res = await PATCH(patchReq({ action: "accept" }), ctx("app-1"));
+    const res = await PATCH(patchReq({ action: "cancel" }), ctx("app-1"));
     expect(res.status).toBe(401);
   });
 
@@ -46,82 +49,63 @@ describe("PATCH /api/applications/:id (FR-007~FR-009, AC-010~AC-012)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("서비스 403(타인프로그램) 반환 시 403 (FR-008, AC-005)", async () => {
+  it("레거시 accept 액션은 400으로 거부한다", async () => {
     mockGetCurrentUser.mockResolvedValue(CREATOR);
-    mockProcessApplication.mockResolvedValue({
+    const res = await PATCH(patchReq({ action: "accept" }), ctx("app-1"));
+    expect(res.status).toBe(400);
+    expect(mockCancelProgramApplication).not.toHaveBeenCalled();
+    expect(mockRemoveProgramParticipant).not.toHaveBeenCalled();
+  });
+
+  it("레거시 reject 액션은 400으로 거부한다", async () => {
+    mockGetCurrentUser.mockResolvedValue(CREATOR);
+    const res = await PATCH(patchReq({ action: "reject" }), ctx("app-1"));
+    expect(res.status).toBe(400);
+    expect(mockCancelProgramApplication).not.toHaveBeenCalled();
+    expect(mockRemoveProgramParticipant).not.toHaveBeenCalled();
+  });
+
+  it("서비스 403(타인프로그램) 반환 시 403", async () => {
+    mockGetCurrentUser.mockResolvedValue(CREATOR);
+    mockRemoveProgramParticipant.mockResolvedValue({
       ok: false,
       status: 403,
       error: "Forbidden: not the program owner",
     });
-
-    const res = await PATCH(patchReq({ action: "accept" }), ctx("app-1"));
+    const res = await PATCH(patchReq({ action: "remove" }), ctx("app-1"));
     expect(res.status).toBe(403);
   });
 
-  it("서비스 400(PENDING아님) 반환 시 400 (FR-009, AC-010)", async () => {
-    mockGetCurrentUser.mockResolvedValue(CREATOR);
-    mockProcessApplication.mockResolvedValue({
-      ok: false,
-      status: 400,
-      error: "Application is not PENDING",
-    });
-
-    const res = await PATCH(patchReq({ action: "accept" }), ctx("app-1"));
-    expect(res.status).toBe(400);
-  });
-
-  it("accept 성공 시 200 (AC-010)", async () => {
-    mockGetCurrentUser.mockResolvedValue(CREATOR);
-    mockProcessApplication.mockResolvedValue({
+  it("cancel 액션은 팬 본인 취소 서비스로 전달한다 (SPEC-015)", async () => {
+    mockGetCurrentUser.mockResolvedValue({ id: "fan-1", role: "FAN", creatorProfile: null });
+    mockCancelProgramApplication.mockResolvedValue({
       ok: true,
-      data: {
-        application: { id: "app-1", status: "ACCEPTED" },
-        autoRejectedCount: 0,
-      },
+      data: { id: "app-1", status: "CANCELLED" },
     });
 
-    const res = await PATCH(patchReq({ action: "accept" }), ctx("app-1"));
+    const res = await PATCH(patchReq({ action: "cancel" }), ctx("app-1"));
+
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({
-      application: { id: "app-1", status: "ACCEPTED" },
-      autoRejectedCount: 0,
-    });
+    expect(mockCancelProgramApplication).toHaveBeenCalledWith("app-1", "fan-1");
   });
 
-  it("accept + autoRejectOthers true 시 서비스에 전달 (FR-007, AC-011)", async () => {
+  it("remove 액션은 크리에이터 참여자 제외 서비스로 전달한다 (SPEC-015)", async () => {
     mockGetCurrentUser.mockResolvedValue(CREATOR);
-    mockProcessApplication.mockResolvedValue({
+    mockRemoveProgramParticipant.mockResolvedValue({
       ok: true,
-      data: {
-        application: { id: "app-1", status: "ACCEPTED" },
-        autoRejectedCount: 2,
-      },
+      data: { id: "app-1", status: "REMOVED" },
     });
 
     const res = await PATCH(
-      patchReq({ action: "accept", autoRejectOthers: true }),
+      patchReq({ action: "remove", removedReason: "운영 사유" }),
       ctx("app-1"),
     );
+
     expect(res.status).toBe(200);
-    expect(mockProcessApplication).toHaveBeenCalledWith(
+    expect(mockRemoveProgramParticipant).toHaveBeenCalledWith(
       { role: "CREATOR", creatorProfileId: "cp-1" },
       "app-1",
-      "accept",
-      true,
+      "운영 사유",
     );
-  });
-
-  it("reject 성공 시 200 (AC-010)", async () => {
-    mockGetCurrentUser.mockResolvedValue(CREATOR);
-    mockProcessApplication.mockResolvedValue({
-      ok: true,
-      data: {
-        application: { id: "app-1", status: "REJECTED" },
-        autoRejectedCount: 0,
-      },
-    });
-
-    const res = await PATCH(patchReq({ action: "reject" }), ctx("app-1"));
-    expect(res.status).toBe(200);
   });
 });

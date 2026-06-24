@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { toggleBookmark } from "@/lib/bookmarks";
 import { mockPaymentProvider } from "@/lib/payment/provider";
+import { buildNotificationMessage, notificationHref } from "@/lib/notification-types";
+import { purchaseArtwork } from "@/lib/artwork-orders";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { Membership } from "@prisma/client";
 
 /**
@@ -21,31 +24,118 @@ export async function joinMembership(planId: string): Promise<Membership> {
 
   const plan = await prisma.membershipPlan.findUnique({
     where: { id: planId },
-    select: { priceKrw: true },
+    select: { priceKrw: true, creatorProfileId: true },
   });
   if (!plan) {
     throw new Error("플랜을 찾을 수 없습니다.");
   }
 
-  // PRD §8.3: 멤버십 가입 → Mock 결제 후 ACTIVE
-  await mockPaymentProvider.charge({ amount: plan.priceKrw });
+  const now = new Date();
+  const expiresAt = new Date(now);
+  expiresAt.setDate(expiresAt.getDate() + 30);
+  const charge = await mockPaymentProvider.charge({ amount: plan.priceKrw });
+  const feeKrw = Math.round(plan.priceKrw * 0.1);
+
+  if (!charge.success) {
+    await prisma.$transaction(async (tx) => {
+      const membership = await tx.membership.upsert({
+        where: { userId_planId: { userId: user.id, planId } },
+        update: {
+          status: "PAYMENT_FAILED",
+          cancelledAt: null,
+        },
+        create: {
+          userId: user.id,
+          planId,
+          status: "PAYMENT_FAILED",
+          startedAt: now,
+        },
+      });
+      const payment = await tx.payment.create({
+        data: {
+          membershipId: membership.id,
+          fanUserId: user.id,
+          amount: plan.priceKrw,
+          feeKrw,
+          status: "FAILED",
+          provider: mockPaymentProvider.name,
+          providerTxId: charge.providerTxId,
+        },
+      });
+      await tx.membership.update({
+        where: { id: membership.id },
+        data: { lastPaymentId: payment.id },
+      });
+      await tx.notification.create({
+        data: {
+          userId: user.id,
+          type: "MEMBERSHIP_PAYMENT_FAILED",
+          message: buildNotificationMessage("MEMBERSHIP_PAYMENT_FAILED", {}),
+          linkUrl: notificationHref("MEMBERSHIP_PAYMENT_FAILED", {
+            membershipId: membership.id,
+          }),
+        },
+      });
+    });
+    throw new Error("Membership payment failed");
+  }
 
   try {
     return await prisma.$transaction(async (tx) => {
-      const membership = await tx.membership.create({
-        data: { userId: user.id, planId },
+      const membership = await tx.membership.upsert({
+        where: { userId_planId: { userId: user.id, planId } },
+        update: {
+          status: "ACTIVE",
+          startedAt: now,
+          expiresAt,
+          cancelledAt: null,
+        },
+        create: {
+          userId: user.id,
+          planId,
+          status: "ACTIVE",
+          startedAt: now,
+          expiresAt,
+        },
       });
-      const feeKrw = Math.round(plan.priceKrw * 0.1);
-      await tx.payment.create({
+      const payment = await tx.payment.create({
         data: {
           membershipId: membership.id,
           fanUserId: user.id,
           amount: plan.priceKrw,
           feeKrw,
           status: "PAID",
+          provider: mockPaymentProvider.name,
+          providerTxId: charge.providerTxId,
         },
       });
-      return membership;
+      const payout = plan.priceKrw - feeKrw;
+      await tx.settlement.create({
+        data: {
+          paymentId: payment.id,
+          sourceType: "MEMBERSHIP",
+          sourceId: planId,
+          grossAmount: plan.priceKrw,
+          feeKrw,
+          payout,
+          status: "PENDING",
+        },
+      });
+      const updatedMembership = await tx.membership.update({
+        where: { id: membership.id },
+        data: { lastPaymentId: payment.id },
+      });
+      await tx.notification.create({
+        data: {
+          userId: user.id,
+          type: "MEMBERSHIP_PAYMENT_PAID",
+          message: buildNotificationMessage("MEMBERSHIP_PAYMENT_PAID", {}),
+          linkUrl: notificationHref("MEMBERSHIP_PAYMENT_PAID", {
+            membershipId: membership.id,
+          }),
+        },
+      });
+      return updatedMembership;
     });
   } catch (err) {
     // NFR-003: @@unique([userId, planId]) 중복 시 P2002 → 기존 레코드 반환
@@ -84,4 +174,41 @@ export async function toggleBookmarkAction(
   revalidatePath(`/creators/${creatorProfileId}`);
   revalidatePath("/dashboard/fan/bookmarks");
   return { ok: true, bookmarked: result.data.bookmarked };
+}
+
+export async function purchaseArtworkAction(
+  artworkId: string,
+  formData: FormData,
+): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new Error("Unauthorized: 로그인이 필요합니다.");
+  }
+
+  const recipientName = String(formData.get("recipientName") ?? "").trim();
+  const recipientPhone = String(formData.get("recipientPhone") ?? "").trim();
+  const shippingAddress = String(formData.get("shippingAddress") ?? "").trim();
+  const shippingMemo = String(formData.get("shippingMemo") ?? "").trim();
+  if (!recipientName || !recipientPhone || !shippingAddress) {
+    throw new Error("배송 정보를 입력해 주세요.");
+  }
+
+  const result = await purchaseArtwork(
+    { userId: user.id },
+    {
+      artworkId,
+      recipientName,
+      recipientPhone,
+      shippingAddress,
+      shippingMemo: shippingMemo || undefined,
+      shippingFeeKrw: 0,
+    },
+  );
+
+  if (!result.ok) {
+    throw new Error(result.error);
+  }
+
+  revalidatePath("/dashboard/fan/payments");
+  redirect(`/artwork-orders/${result.data.orderId}`);
 }

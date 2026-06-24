@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
-import { logout } from "@/app/login/actions";
-import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notification/NotificationBell";
+import { UserMenu } from "@/components/UserMenu";
+import { buttonVariants } from "@/components/ui/button";
+
+const publicNavLinks = [
+  { href: "/creators", label: "작가 찾기" },
+  { href: "/creators?tab=artworks", label: "작품 보기" },
+  { href: "/programs", label: "프로그램" },
+  { href: "/support", label: "이용 안내" },
+];
 
 /**
  * Global app header (SPEC-001 FR-006, FR-007).
@@ -15,47 +22,89 @@ import { NotificationBell } from "@/components/notification/NotificationBell";
  */
 export async function Header() {
   const user = await getCurrentUser();
-  if (!user) return null;
 
-  const roleLabel = user.role === "CREATOR" ? "크리에이터" : "팬";
-  const roleClass =
-    user.role === "CREATOR"
-      ? "bg-primary/10 text-primary"
-      : "bg-muted text-muted-foreground";
+  // 비로그인 사용자용 공개 헤더 — 발견 중심 탐색 + 크리에이터 시작 CTA.
+  if (!user) {
+    return (
+      <header className="sticky top-0 z-40 border-b border-border-default bg-white/90 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-5 px-4">
+          <div className="flex min-w-0 items-center gap-4">
+            <Link
+              href="/"
+              className="shrink-0 font-heading text-[18px] font-bold text-brand-primary transition-colors hover:text-brand-primary-pressed"
+            >
+              ArtBridge
+            </Link>
+            <nav className="hidden items-center gap-1 sm:flex">
+              {publicNavLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="rounded-[var(--radius-control)] px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-brand-subtle hover:text-brand-primary-pressed"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href="/login" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              로그인
+            </Link>
+            <Link href="/signup" className={buttonVariants({ size: "sm" })}>
+              크리에이터 시작
+            </Link>
+          </div>
+        </div>
+        <nav className="flex items-center gap-2 overflow-x-auto border-t border-border-default px-4 py-2 sm:hidden">
+          {publicNavLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="shrink-0 rounded-[var(--radius-control)] px-2.5 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-brand-subtle hover:text-brand-primary-pressed"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      </header>
+    );
+  }
 
   const navLinks =
     user.role === "CREATOR"
       ? [
-          { href: "/creators", label: "둘러보기" },
-          { href: "/dashboard/creator", label: "스튜디오" },
+          { href: "/dashboard/creator", label: "홈" },
+          { href: "/dashboard/creator/edit", label: "스튜디오" },
+          { href: "/dashboard/creator/artworks", label: "작품·작업" },
           { href: "/dashboard/creator/programs", label: "프로그램" },
-          { href: "/dashboard/creator/posts/new", label: "포스트 작성" },
+          { href: "/dashboard/creator/artwork-orders", label: "주문·배송" },
+          { href: "/dashboard/creator/settlements", label: "정산" },
         ]
       : [
-          { href: "/dashboard/fan", label: "내 홈" },
-          { href: "/creators", label: "둘러보기" },
+          { href: "/creators", label: "작가 찾기" },
+          { href: "/creators?tab=artworks", label: "작품 구매" },
           { href: "/programs", label: "프로그램" },
           { href: "/dashboard/fan/bookmarks", label: "관심 작가" },
-          { href: "/dashboard/fan/memberships", label: "내 멤버십" },
-          { href: "/dashboard/fan/payments", label: "내 신청·결제" },
+          { href: "/dashboard/fan", label: "마이페이지" },
         ];
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-4">
+    <header className="sticky top-0 z-40 border-b border-border-default bg-white/90 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-5 px-4">
         <div className="flex min-w-0 items-center gap-4">
           <Link
             href="/"
-            className="shrink-0 font-heading text-sm font-semibold hover:opacity-80"
+            className="shrink-0 font-heading text-[18px] font-bold text-brand-primary transition-colors hover:text-brand-primary-pressed"
           >
             ArtBridge
           </Link>
-          <nav className="hidden items-center gap-3 sm:flex">
+          <nav className="hidden items-center gap-1 sm:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="rounded-[var(--radius-control)] px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-brand-subtle hover:text-brand-primary-pressed"
               >
                 {link.label}
               </Link>
@@ -64,30 +113,17 @@ export async function Header() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-2 md:flex">
-            <span className="text-sm font-medium">{user.name}</span>
-            <span
-              className={`inline-flex h-5 items-center rounded-full px-2 text-xs font-medium ${roleClass}`}
-            >
-              {roleLabel}
-            </span>
-          </div>
           <NotificationBell />
-          <form action={logout}>
-            <Button type="submit" variant="outline" size="sm">
-              로그아웃
-            </Button>
-          </form>
+          <UserMenu name={user.name} role={user.role} />
         </div>
       </div>
 
-      {/* 모바일 네비게이션 (작은 화면에서 상단 네비가 숨겨지므로 별도 행) */}
-      <nav className="flex items-center gap-4 overflow-x-auto border-t px-4 py-2 sm:hidden">
+      <nav className="flex items-center gap-2 overflow-x-auto border-t border-border-default px-4 py-2 sm:hidden">
         {navLinks.map((link) => (
           <Link
             key={link.href}
             href={link.href}
-            className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
+            className="shrink-0 rounded-[var(--radius-control)] px-2.5 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-brand-subtle hover:text-brand-primary-pressed"
           >
             {link.label}
           </Link>

@@ -38,24 +38,24 @@ describe("validation/application (SPEC-005)", () => {
   });
 
   describe("processSchema", () => {
-    it("accept 액션은 유효", () => {
-      const result = processSchema.safeParse({ action: "accept" });
+    it("cancel 액션은 유효", () => {
+      const result = processSchema.safeParse({ action: "cancel" });
       expect(result.success).toBe(true);
     });
 
-    it("reject 액션은 유효", () => {
-      const result = processSchema.safeParse({ action: "reject" });
+    it("remove 액션은 유효", () => {
+      const result = processSchema.safeParse({ action: "remove" });
       expect(result.success).toBe(true);
     });
 
-    it("autoRejectOthers는 optional", () => {
+    it("removedReason은 optional", () => {
       const result = processSchema.safeParse({
-        action: "accept",
-        autoRejectOthers: true,
+        action: "remove",
+        removedReason: "운영 사유",
       });
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.data.autoRejectOthers).toBe(true);
+        expect(result.data.removedReason).toBe("운영 사유");
       }
     });
 
@@ -69,12 +69,9 @@ describe("validation/application (SPEC-005)", () => {
       expect(result.success).toBe(false);
     });
 
-    it("accept + autoRejectOthers 조합", () => {
-      const result = processSchema.safeParse({
-        action: "accept",
-        autoRejectOthers: false,
-      });
-      expect(result.success).toBe(true);
+    it("레거시 accept/reject 액션은 실패", () => {
+      expect(processSchema.safeParse({ action: "accept" }).success).toBe(false);
+      expect(processSchema.safeParse({ action: "reject" }).success).toBe(false);
     });
   });
 
@@ -85,7 +82,7 @@ describe("validation/application (SPEC-005)", () => {
     });
 
     it("ProcessInput 타입이 존재", () => {
-      const input: ProcessInput = { action: "accept" };
+      const input: ProcessInput = { action: "cancel" };
       expect(input).toBeDefined();
     });
   });

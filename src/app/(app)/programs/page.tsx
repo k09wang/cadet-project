@@ -1,22 +1,23 @@
 import { listPublicPrograms, listProgramCategories } from "@/lib/queries/programs";
-import { PUBLIC_PROGRAM_STATUSES } from "@/lib/program-status";
-import type { ProgramStatus } from "@prisma/client";
 import { ProgramCard } from "@/components/programs/ProgramCard";
 import { ProgramFilter } from "@/components/programs/ProgramFilter";
 
 /**
  * 공개 프로그램 탐색 목록 (SPEC-004 FR-003, AC-002, 7장 /programs).
- * PRD §4.2 P1 — 카테고리·모집상태·가격대 필터 + 검색.
+ * PRD §4.2 P1 — 카테고리·가격대·정렬 필터 + 검색.
  * 필터는 URL searchParams 로 주고받아 서버에서 처리한다 (Next 16 RSC).
  */
 interface ProgramsPageProps {
   searchParams: Promise<{
     category?: string;
-    status?: string;
+    sort?: string;
     priceMax?: string;
     q?: string;
   }>;
 }
+
+const SORT_VALUES = ["latest", "price_asc", "price_desc"] as const;
+type SortValue = (typeof SORT_VALUES)[number];
 
 export default async function ProgramsPage({ searchParams }: ProgramsPageProps) {
   const sp = await searchParams;
@@ -24,16 +25,13 @@ export default async function ProgramsPage({ searchParams }: ProgramsPageProps) 
     listProgramCategories(),
     listPublicPrograms({
       category: sp.category || undefined,
-      status:
-        sp.status && PUBLIC_PROGRAM_STATUSES.includes(sp.status as ProgramStatus)
-          ? (sp.status as ProgramStatus)
-          : undefined,
       priceMax: sp.priceMax ? Number(sp.priceMax) : undefined,
       q: sp.q || undefined,
+      sort: SORT_VALUES.includes(sp.sort as SortValue) ? (sp.sort as SortValue) : undefined,
     }),
   ]);
 
-  const hasFilter = Boolean(sp.category || sp.status || sp.priceMax || sp.q);
+  const hasFilter = Boolean(sp.category || sp.sort || sp.priceMax || sp.q);
 
   return (
     <div className="space-y-6">
@@ -48,7 +46,7 @@ export default async function ProgramsPage({ searchParams }: ProgramsPageProps) 
         categories={categories.map((c) => c.category).filter((c): c is string => Boolean(c))}
         current={{
           category: sp.category,
-          status: sp.status,
+          sort: sp.sort,
           priceMax: sp.priceMax,
           q: sp.q,
         }}

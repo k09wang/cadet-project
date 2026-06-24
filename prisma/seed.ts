@@ -328,10 +328,20 @@ async function upsertMembership(userId: string, planId: string) {
 // ──────────────────────────── 7. ProgramApplication ────────────────────────────
 
 async function upsertApplications(programId: string, fans: Array<{ id: string }>) {
+  // SPEC-013 에스크로 데모: demo-app-1은 결제 완료(PAID) 후 크리에이터가 납품 요청한 상태.
+  // deliveryRequestedAt 세팅 → 팬(fans[0])에게 "완료 승인 대기" 배지 + ApproveCompletionButton 노출.
+  // update에도 명시 — 재시드 시 납품 요청 상태가 보존된다.
+  const deliveryRequestedAt = new Date();
   await prisma.programApplication.upsert({
     where: { id: "demo-app-1" },
-    update: {},
-    create: { id: "demo-app-1", programId, userId: fans[0].id, status: ProgramApplicationStatus.ACCEPTED },
+    update: { deliveryRequestedAt },
+    create: {
+      id: "demo-app-1",
+      programId,
+      userId: fans[0].id,
+      status: ProgramApplicationStatus.ACCEPTED,
+      deliveryRequestedAt,
+    },
   });
   await prisma.programApplication.upsert({
     where: { id: "demo-app-2" },
@@ -545,6 +555,13 @@ async function upsertReviews(
 ) {
   const completed = programs.find((p) => p.status === "COMPLETED");
   if (!completed) return;
+  // SPEC-013: 양방향 평가 — 팬→크리에이터 리뷰의 피평가자는 프로그램 소유 크리에이터.
+  const owner = await prisma.program.findUnique({
+    where: { id: completed.id },
+    select: { creatorProfile: { select: { userId: true } } },
+  });
+  const revieweeId = owner?.creatorProfile?.userId;
+  if (!revieweeId) return;
   await prisma.review.upsert({
     where: { id: "demo-review-1" },
     update: {},
@@ -552,6 +569,7 @@ async function upsertReviews(
       id: "demo-review-1",
       programId: completed.id,
       userId: fans[0].id,
+      revieweeId,
       rating: 4,
       comment: "체계적이고 유익했어요.",
       tags: ["구성이 알차요", "피드백이 유용해요"],
@@ -564,6 +582,7 @@ async function upsertReviews(
       id: "demo-review-2",
       programId: completed.id,
       userId: fans[1].id,
+      revieweeId,
       rating: 5,
       comment: "정말 만족스럽습니다!",
       tags: ["소통이 좋아요", "다시 참여하고 싶어요"],

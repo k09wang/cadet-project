@@ -15,6 +15,16 @@ describe("CreatorCard (FR-002, NFR-004)", () => {
     expect(screen.getByText("신진작가 스튜디오")).toBeTruthy();
   });
 
+  it("entryTab이 있으면 해당 탭으로 바로 진입하는 링크를 만든다", () => {
+    render(
+      <CreatorCard
+        creator={{ id: "p-1", studioName: "작품 작가", bio: null }}
+        entryTab="artworks"
+      />,
+    );
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/creators/p-1?tab=artworks");
+  });
+
   it("renders bio when provided", () => {
     render(
       <CreatorCard

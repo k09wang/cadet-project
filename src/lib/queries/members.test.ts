@@ -45,12 +45,12 @@ describe("listActiveMembers (FR-008, NFR-002)", () => {
 });
 
 describe("listProgramParticipants (FR-009, AC-007)", () => {
-  it("ACCEPTED 신청자만 user/contract.payments 포함하여 조회한다", async () => {
+  it("ACCEPTED 신청자만 user/payment 포함하여 조회한다", async () => {
     const rows = [
       {
         id: "app-1",
         user: { id: "u-1", name: "팬" },
-        contract: { payments: [{ status: "PAID" }] },
+        payment: { status: "PAID" },
       },
     ];
     mockApplicationFindMany.mockResolvedValue(rows);
@@ -61,7 +61,7 @@ describe("listProgramParticipants (FR-009, AC-007)", () => {
     const call = mockApplicationFindMany.mock.calls[0][0];
     expect(call.where).toEqual({ programId: "prog-1", status: "ACCEPTED" });
     expect(call.include.user.select).toEqual({ id: true, name: true });
-    expect(call.include.contract.include.payments.select).toEqual({ status: true });
+    expect(call.include.payment.select).toEqual({ status: true });
   });
 });
 

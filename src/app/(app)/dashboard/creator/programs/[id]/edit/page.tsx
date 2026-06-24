@@ -73,7 +73,7 @@ export default async function EditProgramPage({
 
   return (
     <main className="mx-auto max-w-2xl space-y-4">
-      <h1 className="font-heading text-xl font-bold">클럽 수정</h1>
+      <h1 className="font-heading text-xl font-bold">프로그램 수정</h1>
       <ProgramForm action={updateProgramAction} initial={initial} mode="edit" />
     </main>
   );

@@ -25,9 +25,30 @@ vi.mock("@/lib/membership", () => ({
   isActiveMember: (...args: unknown[]) => mockIsActiveMember(...args),
 }));
 
+const mockCanAccessCommunity = vi.fn();
+vi.mock("@/lib/community-access", () => ({
+  canAccessCommunity: (...args: unknown[]) => mockCanAccessCommunity(...args),
+}));
+
+const mockListCommunityPosts = vi.fn();
+vi.mock("@/lib/queries/community", () => ({
+  listCommunityPosts: (...args: unknown[]) => mockListCommunityPosts(...args),
+}));
+
+const mockGetCreatorRating = vi.fn();
+vi.mock("@/lib/queries/reviews", () => ({
+  getCreatorRating: (...args: unknown[]) => mockGetCreatorRating(...args),
+}));
+
+const mockIsBookmarked = vi.fn();
+vi.mock("@/lib/bookmarks", () => ({
+  isBookmarked: (...args: unknown[]) => mockIsBookmarked(...args),
+}));
+
 // joinMembership Server Action mock
 vi.mock("@/app/(app)/creators/[creatorId]/actions", () => ({
   joinMembership: vi.fn(),
+  purchaseArtworkAction: vi.fn(),
 }));
 
 import CreatorDetailPage from "@/app/(app)/creators/[creatorId]/page";
@@ -37,6 +58,10 @@ beforeEach(() => {
   mockNotFound.mockClear();
   mockGetCurrentUser.mockResolvedValue(null); // 기본: 비로그인
   mockIsActiveMember.mockResolvedValue(false); // 기본: 비멤버
+  mockCanAccessCommunity.mockResolvedValue(false);
+  mockListCommunityPosts.mockResolvedValue([]);
+  mockGetCreatorRating.mockResolvedValue({ avg: null, count: 0 });
+  mockIsBookmarked.mockResolvedValue(false);
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -58,6 +83,9 @@ describe("/creators/[creatorId] (AC-002, AC-003, AC-007)", () => {
       { id: "plan-1", title: "브론즈", description: null, priceKrw: 5000 },
     ],
     programs: [],
+    artworks: [
+      { id: "art-1", title: "작품 A", description: null, imageUrl: null, priceKrw: 10000, stock: 1 },
+    ],
   };
 
   it("renders studioName, bio and tabs", async () => {
@@ -81,7 +109,20 @@ describe("/creators/[creatorId] (AC-002, AC-003, AC-007)", () => {
     expect(screen.getAllByText("멤버 전용").length).toBeGreaterThan(0);
   });
 
-  it("renders membership plan card with price and CTA (AC-003) — 비멤버에게 가입하기 버튼", async () => {
+  it("renders artworks tab and purchase form", async () => {
+    mockGetCreatorStudio.mockResolvedValue(studio);
+    const ui = await CreatorDetailPage({ params: Promise.resolve({ creatorId: "p-1" }) });
+    render(ui);
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.click(screen.getByRole("tab", { name: "작품" }));
+    expect(screen.getByText("작품 A")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "구매하기" })).toHaveAttribute(
+      "href",
+      "/artworks/art-1/checkout",
+    );
+  });
+
+  it("renders membership plan card with price and CTA (AC-003) — 비멤버에게 가입하기 링크", async () => {
     mockGetCreatorStudio.mockResolvedValue(studio);
     mockIsActiveMember.mockResolvedValue(false);
     const ui = await CreatorDetailPage({ params: Promise.resolve({ creatorId: "p-1" }) });
@@ -90,7 +131,10 @@ describe("/creators/[creatorId] (AC-002, AC-003, AC-007)", () => {
     fireEvent.click(screen.getByRole("tab", { name: "멤버십" }));
     expect(screen.getByText("브론즈")).toBeTruthy();
     expect(screen.getByText(/5,000/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: /멤버십 가입하기/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /멤버십 가입하기/ })).toHaveAttribute(
+      "href",
+      "/creators/p-1/memberships/plan-1/checkout",
+    );
   });
 
   it("이미 멤버인 사용자에게 '멤버십 가입 완료' 비활성 버튼 표시 (AC-003, FR-006)", async () => {

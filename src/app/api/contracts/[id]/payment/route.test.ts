@@ -63,7 +63,7 @@ describe("POST /api/contracts/:id/payment (SPEC-006 FR-007, FR-008)", () => {
 
   it("알 수 없는 provider면 검증 400", async () => {
     mockGetCurrentUser.mockResolvedValue(FAN);
-    const res = await POST(req({ provider: "toss" }), ctx("c1"));
+    const res = await POST(req({ provider: "card" }), ctx("c1"));
     expect(res.status).toBe(400);
     expect(mockStartPayment).not.toHaveBeenCalled();
   });

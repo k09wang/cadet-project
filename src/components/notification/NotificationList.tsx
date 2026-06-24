@@ -1,10 +1,16 @@
 "use client";
 
-import { useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/format";
+import {
+  NOTIFICATION_CATEGORY_FILTERS,
+  notificationCategory,
+  notificationCategoryLabel,
+  type NotificationCategoryId,
+} from "@/lib/notification-categories";
 import { Bell, Check, X, AlertCircle } from "lucide-react";
 
 /**
@@ -35,6 +41,31 @@ interface NotificationListProps {
 export function NotificationList({ notifications }: NotificationListProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [activeCategory, setActiveCategory] = useState<NotificationCategoryId>("all");
+
+  const counts = useMemo(() => {
+    const next: Record<NotificationCategoryId, number> = {
+      all: notifications.length,
+      membership: 0,
+      program: 0,
+      artwork: 0,
+      settlement: 0,
+    };
+
+    notifications.forEach((notification) => {
+      const category = notificationCategory(notification.type);
+      if (category !== "general") next[category] += 1;
+    });
+    return next;
+  }, [notifications]);
+
+  const filteredNotifications = useMemo(
+    () =>
+      activeCategory === "all"
+        ? notifications
+        : notifications.filter((notification) => notificationCategory(notification.type) === activeCategory),
+    [activeCategory, notifications],
+  );
 
   const handleReadAll = () => {
     startTransition(async () => {
@@ -93,10 +124,37 @@ export function NotificationList({ notifications }: NotificationListProps) {
         </Button>
       </div>
 
+      <div className="flex gap-2 overflow-x-auto pb-1" aria-label="알림 카테고리">
+        {NOTIFICATION_CATEGORY_FILTERS.map((filter) => {
+          const active = activeCategory === filter.id;
+          return (
+            <button
+              key={filter.id}
+              type="button"
+              onClick={() => setActiveCategory(filter.id)}
+              className={cn(
+                "shrink-0 rounded-[var(--radius-control)] border px-3 py-1.5 text-xs font-semibold transition-colors",
+                active
+                  ? "border-brand-primary bg-brand-subtle text-brand-primary"
+                  : "border-border-default bg-white text-text-muted hover:border-brand-primary hover:text-brand-primary",
+              )}
+            >
+              {filter.label} {counts[filter.id].toLocaleString("ko-KR")}
+            </button>
+          );
+        })}
+      </div>
+
+      {filteredNotifications.length === 0 ? (
+        <div className="rounded-lg border border-border-default bg-white px-4 py-8 text-center text-sm text-text-muted">
+          이 카테고리 알림이 없습니다.
+        </div>
+      ) : (
       <ul className="space-y-2">
-        {notifications.map((notification) => {
+        {filteredNotifications.map((notification) => {
           const Icon = iconMap[notification.type] || Bell;
           const isUnread = !notification.readAt;
+          const categoryLabel = notificationCategoryLabel(notification.type);
 
           return (
             <li
@@ -119,6 +177,9 @@ export function NotificationList({ notifications }: NotificationListProps) {
               </div>
 
               <div className="flex-1 min-w-0 space-y-1">
+                <span className="inline-flex rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-text-muted">
+                  {categoryLabel}
+                </span>
                 <p
                   className={cn(
                     "text-sm",
@@ -146,6 +207,7 @@ export function NotificationList({ notifications }: NotificationListProps) {
           );
         })}
       </ul>
+      )}
     </div>
   );
 }

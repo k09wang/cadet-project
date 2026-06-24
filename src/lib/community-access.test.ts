@@ -55,9 +55,7 @@ describe("canAccessCommunity (FR-001, AC-002, AC-003)", () => {
     expect(call.where.userId).toBe("u-fan");
     expect(call.where.status).toBe("ACCEPTED");
     expect(call.where.program).toEqual({ creatorProfileId: "p-creator" });
-    expect(call.where.contract.payments.some.status).toEqual({
-      in: ["PAID", "RELEASED"],
-    });
+    expect(call.where.payment.status).toEqual({ in: ["PAID", "RELEASED"] });
   });
 
   it("소유 크리에이터 본인이면 true를 반환한다", async () => {

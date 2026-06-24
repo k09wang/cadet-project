@@ -40,7 +40,7 @@ export default async function NewProgramPage() {
 
   return (
     <main className="mx-auto max-w-2xl space-y-4">
-      <h1 className="font-heading text-xl font-bold">새 클럽 만들기</h1>
+      <h1 className="font-heading text-xl font-bold">새 프로그램 만들기</h1>
       <NewProgramClient action={createProgramAction} />
     </main>
   );

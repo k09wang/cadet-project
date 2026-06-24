@@ -91,6 +91,12 @@ describe("POST /api/programs/:id/applications (FR-001~FR-004, AC-001~AC-004)", (
     const res = await POST(postReq({ message: "test" }), ctx("p1"));
     expect(res.status).toBe(201);
     expect(await res.json()).toEqual({ id: "app-1" });
+    expect(mockApplyToProgram).toHaveBeenCalledWith(
+      { role: "FAN", creatorProfileId: undefined },
+      "p1",
+      "u-1",
+      "test",
+    );
   });
 });
 

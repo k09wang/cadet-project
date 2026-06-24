@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatDateTime } from "@/lib/format";
@@ -10,17 +11,26 @@ import { formatDateTime } from "@/lib/format";
  * 신청 상태 배지 스타일 (SPEC-005 FR-003).
  */
 const statusStyles: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  ACCEPTED: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  REJECTED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  AUTO_REJECTED: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400",
+  PENDING: "bg-[#fff7e6] text-[#b77900]",
+  PENDING_PAYMENT: "bg-[#fff7e6] text-[#b77900]",
+  ACCEPTED: "bg-[#ecfdf3] text-[#047857]",
+  REJECTED: "bg-danger/10 text-danger",
+  AUTO_REJECTED: "bg-neutral-100 text-text-muted",
+  CANCELLED: "bg-neutral-100 text-text-muted",
+  REMOVED: "bg-danger/10 text-danger",
+  PAYMENT_FAILED: "bg-danger/10 text-danger",
 };
 
-const statusLabels: Record<string, string> = {
-  PENDING: "대기 중",
-  ACCEPTED: "수락",
+// 신청 상태 → 한국어 라벨 (영문 enum 노출 방지 — 시각적/UX 개선).
+export const applicationStatusLabels: Record<string, string> = {
+  PENDING: "신청 대기",
+  PENDING_PAYMENT: "결제 대기",
+  ACCEPTED: "확정",
   REJECTED: "거절",
   AUTO_REJECTED: "자동 거절",
+  CANCELLED: "팬 취소",
+  REMOVED: "제외됨",
+  PAYMENT_FAILED: "결제 실패",
 };
 
 /**
@@ -44,10 +54,9 @@ interface ApplicationListProps {
 export function ApplicationList({ applications }: ApplicationListProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [autoRejectOthers, setAutoRejectOthers] = useState(false);
   const [feedback, setFeedback] = useState<Record<string, string>>({});
 
-  const handleAction = async (applicationId: string, action: "accept" | "reject") => {
+  const handleRemove = async (applicationId: string) => {
     setFeedback((prev) => ({ ...prev, [applicationId]: "" }));
 
     startTransition(async () => {
@@ -56,8 +65,8 @@ export function ApplicationList({ applications }: ApplicationListProps) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action,
-            autoRejectOthers: action === "accept" ? autoRejectOthers : false,
+            action: "remove",
+            removedReason: "크리에이터가 프로그램 신청 관리에서 멤버를 제외했습니다.",
           }),
         });
 
@@ -71,14 +80,10 @@ export function ApplicationList({ applications }: ApplicationListProps) {
           return;
         }
 
-        if (data.autoRejectedCount > 0) {
-          setFeedback((prev) => ({
-            ...prev,
-            [applicationId]: `${data.autoRejectedCount}건의 대기 신청이 자동 거절되었습니다.`,
-          }));
-        }
-
-        // 페이지 새로고침으로 상태 업데이트
+        setFeedback((prev) => ({
+          ...prev,
+          [applicationId]: "멤버가 제외되었습니다.",
+        }));
         router.refresh();
       } catch {
         setFeedback((prev) => ({
@@ -91,9 +96,12 @@ export function ApplicationList({ applications }: ApplicationListProps) {
 
   if (applications.length === 0) {
     return (
-      <p className="text-center text-sm text-muted-foreground py-8">
-        아직 신청이 없습니다.
-      </p>
+      <div className="rounded-[var(--radius-card)] border border-border-default bg-white px-6 py-10 text-center">
+        <p className="text-sm font-medium text-text-default">아직 신청이 없습니다.</p>
+        <p className="mt-1 text-[13px] text-text-muted">
+          신청과 결제가 완료된 멤버가 생기면 이곳에서 확인할 수 있습니다.
+        </p>
+      </div>
     );
   }
 
@@ -102,60 +110,44 @@ export function ApplicationList({ applications }: ApplicationListProps) {
       {applications.map((application) => (
         <div
           key={application.id}
-          className="border rounded-lg p-4 space-y-3"
+          className="rounded-[var(--radius-card)] border border-border-default bg-white p-5 shadow-[var(--elevation-1)]"
         >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-medium truncate">{application.user.name}</h3>
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                    statusStyles[application.status],
-                  )}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <h3 className="truncate text-base font-semibold text-text-default">
+                  {application.user.name}
+                </h3>
+                <Badge
+                  variant="secondary"
+                  className={cn("font-medium", statusStyles[application.status])}
                 >
-                  {statusLabels[application.status] || application.status}
-                </span>
+                  {applicationStatusLabels[application.status] || application.status}
+                </Badge>
               </div>
               {application.message ? (
-                <p className="text-sm text-muted-foreground line-clamp-2">
+                <p className="line-clamp-2 text-sm leading-6 text-text-subtle">
                   {application.message}
                 </p>
               ) : null}
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="mt-2 text-xs text-text-muted">
                 {formatDateTime(application.createdAt)}
               </p>
             </div>
 
-            {application.status === "PENDING" && (
-              <div className="flex flex-col gap-2 shrink-0">
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="default"
-                    disabled={isPending}
-                    onClick={() => handleAction(application.id, "accept")}
-                  >
-                    수락
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={isPending}
-                    onClick={() => handleAction(application.id, "reject")}
-                  >
-                    거절
-                  </Button>
-                </div>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    checked={autoRejectOthers}
-                    onChange={(e) => setAutoRejectOthers(e.target.checked)}
-                    className="rounded"
-                  />
-                  수락 시 다른 대기 신청 자동 거절
-                </label>
+            {application.status === "ACCEPTED" && (
+              <div className="flex shrink-0 flex-col gap-2 sm:items-end sm:pt-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isPending}
+                  onClick={() => handleRemove(application.id)}
+                >
+                  멤버 제외
+                </Button>
+                <p className="text-xs text-text-muted">
+                  제외 시 결제/정산 상태가 함께 정리됩니다.
+                </p>
               </div>
             )}
           </div>
@@ -163,10 +155,10 @@ export function ApplicationList({ applications }: ApplicationListProps) {
           {feedback[application.id] && (
             <p
               className={cn(
-                "text-sm",
-                feedback[application.id].includes("자동 거절")
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-destructive",
+                "mt-3 rounded-[var(--radius-control)] px-3 py-2 text-sm",
+                feedback[application.id].includes("제외")
+                  ? "bg-success/10 text-success"
+                  : "bg-danger/10 text-danger",
               )}
             >
               {feedback[application.id]}

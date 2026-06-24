@@ -10,6 +10,8 @@ export const postCreateSchema = z
     body: z.string().min(1),
     visibility: z.enum(["PUBLIC", "MEMBER_ONLY", "PAID"]),
     priceKrw: z.number().int().positive().optional(),
+    // 임시저장(DRAFT) / 발행(PUBLISHED). 미지정 시 발행.
+    status: z.enum(["DRAFT", "PUBLISHED"]).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.visibility === "PAID" && !data.priceKrw) {

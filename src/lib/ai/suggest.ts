@@ -236,3 +236,146 @@ export async function suggestProgram(
   }
   return { ...suggestMock(input), source: "mock" };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 멤버십 전용 AI 추천 (SPEC-014 REQ-2-001)
+// 프로그램 추천과 달리 주차 구성을 포함하지 않고 가격+혜택 중심으로 반환한다.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 멤버십 추천 결과 스키마 (REQ-2-001: 가격+혜택 중심, 주차 구성 제외).
+ */
+export const membershipSuggestionSchema = z.object({
+  suggestedPrice: z.number().int().positive(),
+  benefits: z.array(z.string().min(1)).min(1),
+  reason: z.string().min(1),
+});
+
+export type MembershipSuggestion = z.infer<typeof membershipSuggestionSchema>;
+
+export interface MembershipSuggestResult extends MembershipSuggestion {
+  source: "openai" | "mock";
+}
+
+export interface MembershipSuggestInput {
+  description: string;
+  category?: string;
+  targetAudience?: string;
+}
+
+/**
+ * 결정론적 멤버십 Mock 추천 (NFR-002).
+ * 동일 입력 → 동일 출력.
+ */
+export function suggestMembershipMock(input: MembershipSuggestInput): MembershipSuggestion {
+  const seed = seedOf({ description: input.description, category: input.category, targetAudience: input.targetAudience });
+
+  // 5,000 ~ 50,000원, 1,000원 단위
+  const price = 5000 + (seed % 46) * 1000;
+
+  const allBenefits = [
+    "전용 커뮤니티 참여",
+    "매월 비공개 콘텐츠 제공",
+    "멤버 전용 라이브 세션",
+    "창작 피드백 월 1회",
+    "멤버 전용 할인 혜택",
+    "신작 미리보기",
+  ];
+  const benefitCount = 2 + (seed % 3);
+  const benefits = Array.from({ length: benefitCount }, (_, i) =>
+    allBenefits[(seed + i * 5) % allBenefits.length],
+  );
+
+  const audience = input.targetAudience?.trim() || "멤버";
+  const category = input.category?.trim() || "콘텐츠";
+
+  return {
+    suggestedPrice: price,
+    benefits,
+    reason: `${audience}를 위한 ${category} 멤버십 추천입니다. 결정론적 데모 추천입니다.`,
+  };
+}
+
+/**
+ * 멤버십 AI 추천 진입점 (REQ-2-001, NFR-002).
+ * 키 없음·오류 시 Mock 폴백, 예외를 throw하지 않는다.
+ */
+export async function suggestMembership(
+  input: MembershipSuggestInput,
+  opts: OpenAICallOptions & { openaiApiKey?: string } = {},
+): Promise<MembershipSuggestResult> {
+  const apiKey = opts.openaiApiKey ?? process.env.OPENAI_API_KEY;
+  if (apiKey && apiKey.trim() !== "") {
+    try {
+      // 기존 OpenAI 호출 구조를 재사용하되, 멤버십 전용 프롬프트로 호출
+      // 주차 구성 없이 suggestedPrice + benefits + reason만 요청
+      const membershipSchema = {
+        type: "object",
+        properties: {
+          suggestedPrice: { type: "integer", minimum: 1 },
+          benefits: { type: "array", items: { type: "string" }, minItems: 1 },
+          reason: { type: "string" },
+        },
+        required: ["suggestedPrice", "benefits", "reason"],
+        additionalProperties: false,
+      };
+
+      const fetchImpl = opts.fetchImpl ?? fetch;
+      const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), timeoutMs);
+
+      let response: Response;
+      try {
+        response = await fetchImpl("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          signal: ac.signal,
+          headers: {
+            "content-type": "application/json",
+            authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content:
+                  "크리에이터의 멤버십 설명을 바탕으로 적정 월 구독 가격과 혜택을 JSON으로 추천하라. 주차 구성은 포함하지 않는다.",
+              },
+              {
+                role: "user",
+                content: JSON.stringify({
+                  description: input.description,
+                  category: input.category,
+                  targetAudience: input.targetAudience,
+                }),
+              },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: { name: "membership_suggestion", schema: membershipSchema, strict: true },
+            },
+          }),
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+
+      if (response.ok) {
+        const data = (await response.json()) as {
+          choices?: { message?: { content?: string } }[];
+        };
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          const parsed = membershipSuggestionSchema.safeParse(JSON.parse(content));
+          if (parsed.success) {
+            return { ...parsed.data, source: "openai" };
+          }
+        }
+      }
+    } catch {
+      // 폴백 — 데모는 실패하지 않는다(NFR-002).
+    }
+  }
+  return { ...suggestMembershipMock(input), source: "mock" };
+}

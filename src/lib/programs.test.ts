@@ -51,64 +51,69 @@ describe("createProgram (FR-001, FR-002, AC-001, AC-004)", () => {
 describe("updateProgram (FR-006, FR-007, AC-005, AC-009, AC-010)", () => {
   it("존재하지 않으면 404", async () => {
     mockFindUnique.mockResolvedValue(null);
-    const r = await updateProgram(CREATOR, "nope", { status: "CLOSED" });
+    const r = await updateProgram(CREATOR, "nope", { title: "수정" });
     if (!r.ok) expect(r.status).toBe(404);
   });
 
   it("soft-deleted면 404", async () => {
     mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-A", status: "RECRUITING", deletedAt: new Date() });
-    const r = await updateProgram(CREATOR, "p1", { status: "CLOSED" });
+    const r = await updateProgram(CREATOR, "p1", { title: "수정" });
     if (!r.ok) expect(r.status).toBe(404);
   });
 
   it("타 크리에이터의 프로그램 수정은 403 (AC-010)", async () => {
     mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-B", status: "RECRUITING", deletedAt: null });
-    const r = await updateProgram(CREATOR, "p1", { status: "CLOSED" });
+    const r = await updateProgram(CREATOR, "p1", { title: "수정" });
     if (!r.ok) expect(r.status).toBe(403);
     expect(mockUpdate).not.toHaveBeenCalled();
   });
 
-  it("미허용 전이(COMPLETED→RECRUITING)는 400 (AC-009)", async () => {
-    mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-A", status: "COMPLETED", deletedAt: null });
-    const r = await updateProgram(CREATOR, "p1", { status: "RECRUITING" });
-    if (!r.ok) expect(r.status).toBe(400);
-    expect(mockUpdate).not.toHaveBeenCalled();
-  });
-
-  it("RECRUITING→CLOSED 전이로 갱신한다 (AC-005)", async () => {
+  it("모집 마감일이 과거면 CLOSED 상태를 자동 저장한다", async () => {
     mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-A", status: "RECRUITING", deletedAt: null });
     mockUpdate.mockResolvedValue({ id: "p1", status: "CLOSED" });
     mockNotifyProgramClosed.mockResolvedValue(undefined);
-    const r = await updateProgram(CREATOR, "p1", { status: "CLOSED" });
+    const recruitDeadline = new Date("2000-01-01T00:00:00Z");
+    const r = await updateProgram(CREATOR, "p1", { recruitDeadline });
     expect(r.ok).toBe(true);
-    expect(mockUpdate).toHaveBeenCalledWith({ where: { id: "p1" }, data: { status: "CLOSED" } });
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { recruitDeadline, status: "CLOSED" },
+    });
     expect(mockNotifyProgramClosed).toHaveBeenCalledWith("p1");
   });
 
-  it("CLOSED 전이 시 notifyProgramClosed 호출 (FR-010, AC-006)", async () => {
+  it("시작일이 지났으면 IN_PROGRESS 상태를 자동 저장한다", async () => {
     mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-A", status: "RECRUITING", deletedAt: null });
-    mockUpdate.mockResolvedValue({ id: "p1", status: "CLOSED" });
-    mockNotifyProgramClosed.mockResolvedValue(undefined);
-    const r = await updateProgram(CREATOR, "p1", { status: "CLOSED" });
+    mockUpdate.mockResolvedValue({ id: "p1", status: "IN_PROGRESS" });
+    const startDate = new Date("2000-01-01T00:00:00Z");
+    const endDate = new Date("2999-01-01T00:00:00Z");
+    const r = await updateProgram(CREATOR, "p1", { startDate, endDate });
     expect(r.ok).toBe(true);
-    expect(mockNotifyProgramClosed).toHaveBeenCalledTimes(1);
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { startDate, endDate, status: "IN_PROGRESS" },
+    });
+    expect(mockNotifyProgramClosed).not.toHaveBeenCalled();
   });
 
-  it("이미 CLOSED인 상태에서 CLOSED로 변경 시 알림 없음 (전이 없음)", async () => {
+  it("상태가 바뀌지 않으면 입력 필드만 갱신한다", async () => {
     mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-A", status: "CLOSED", deletedAt: null });
     mockUpdate.mockResolvedValue({ id: "p1", status: "CLOSED" });
-    const r = await updateProgram(CREATOR, "p1", { status: "CLOSED" });
+    const r = await updateProgram(CREATOR, "p1", { title: "새 제목" });
     expect(r.ok).toBe(true);
+    expect(mockUpdate).toHaveBeenCalledWith({ where: { id: "p1" }, data: { title: "새 제목" } });
     expect(mockNotifyProgramClosed).not.toHaveBeenCalled();
   });
 
   it("알림 실패해도 업데이트는 성공 (best-effort)", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockFindUnique.mockResolvedValue({ id: "p1", creatorProfileId: "p-A", status: "RECRUITING", deletedAt: null });
     mockUpdate.mockResolvedValue({ id: "p1", status: "CLOSED" });
     mockNotifyProgramClosed.mockRejectedValue(new Error("Notification failed"));
-    const r = await updateProgram(CREATOR, "p1", { status: "CLOSED" });
+    const r = await updateProgram(CREATOR, "p1", { recruitDeadline: new Date("2000-01-01T00:00:00Z") });
     expect(r.ok).toBe(true);
     expect(mockUpdate).toHaveBeenCalled();
+    errorSpy.mockRestore();
   });
 });
 

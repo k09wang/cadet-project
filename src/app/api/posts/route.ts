@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { title, body, visibility, priceKrw } = parsed.data;
+  const { title, body, visibility, priceKrw, status } = parsed.data;
 
   const post = await prisma.post.create({
     data: {
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       visibility,
       creatorProfileId: user.creatorProfile.id,
       ...(priceKrw !== undefined ? { priceKrw } : {}),
+      ...(status !== undefined ? { status } : {}),
     },
   });
   return NextResponse.json(post, { status: 201 });

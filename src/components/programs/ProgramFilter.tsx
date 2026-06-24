@@ -9,18 +9,16 @@ interface ProgramFilterProps {
   categories: string[];
   current: {
     category?: string;
-    status?: string;
+    sort?: string;
     priceMax?: string;
     q?: string;
   };
 }
 
-const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "전체 상태" },
-  { value: "RECRUITING", label: "모집 중" },
-  { value: "CONTRACTING", label: "계약 중" },
-  { value: "IN_PROGRESS", label: "진행 중" },
-  { value: "COMPLETED", label: "완료" },
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "최신순" },
+  { value: "price_asc", label: "가격 낮은순" },
+  { value: "price_desc", label: "가격 높은순" },
 ];
 
 const PRICE_OPTIONS: { value: string; label: string }[] = [
@@ -69,13 +67,13 @@ export function ProgramFilter({ categories, current }: ProgramFilterProps) {
       </label>
 
       <label className="space-y-1">
-        <span className="text-xs font-medium text-muted-foreground">모집 상태</span>
+        <span className="text-xs font-medium text-muted-foreground">정렬</span>
         <select
-          name="status"
-          defaultValue={current.status ?? ""}
+          name="sort"
+          defaultValue={current.sort ?? ""}
           className="w-full rounded-md border bg-background px-3 py-2 text-sm"
         >
-          {STATUS_OPTIONS.map((o) => (
+          {SORT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>

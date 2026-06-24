@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 // SPEC-003: joinMembership Server Action mock (MembershipPlanCardList 의존)
 vi.mock("@/app/(app)/creators/[creatorId]/actions", () => ({
   joinMembership: vi.fn(),
+  purchaseArtworkAction: vi.fn(),
 }));
 // SPEC-007: CommunityPostComposer가 useRouter를 사용하므로 mock 필요
 vi.mock("next/navigation", () => ({
@@ -15,6 +16,7 @@ import { StudioTabs } from "@/components/studio/StudioTabs";
 import { PostCardList } from "@/components/studio/PostCardList";
 import { MembershipPlanCardList } from "@/components/studio/MembershipPlanCardList";
 import { ProgramCardList } from "@/components/studio/ProgramCardList";
+import { ArtworkCardList } from "@/components/studio/ArtworkCardList";
 
 const baseStudio = {
   id: "p-1",
@@ -158,12 +160,51 @@ describe("ProgramCardList", () => {
   });
 });
 
+describe("ArtworkCardList", () => {
+  it("renders artwork card with price and checkout link", () => {
+    const artworks = [
+      {
+        id: "art-1",
+        title: "작품 A",
+        description: "원화",
+        imageUrl: null,
+        priceKrw: 120000,
+        stock: 1,
+      },
+    ];
+    render(<ArtworkCardList artworks={artworks} />);
+    expect(screen.getByText("작품 A")).toBeTruthy();
+    expect(screen.getByText(/120,000/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "구매하기" })).toHaveAttribute(
+      "href",
+      "/artworks/art-1/checkout",
+    );
+  });
+
+  it("shows empty state when no artworks", () => {
+    render(<ArtworkCardList artworks={[]} />);
+    expect(screen.getByText(/판매 중인 작품이 없습니다/)).toBeTruthy();
+  });
+});
+
 describe("StudioTabs", () => {
   const studioWithContent = {
     ...baseStudio,
     posts: [{ id: "post-1", title: "P1", body: "", visibility: "PUBLIC" as const, priceKrw: null }],
     plans: [{ id: "plan-1", title: "Pl1", description: null, priceKrw: 1000 }],
     programs: [{ id: "prog-1", title: "Pr1", description: null, category: null, priceKrw: 1000 }],
+    artworks: [{ id: "art-1", title: "Art1", description: null, imageUrl: null, priceKrw: 2000, stock: 1 }],
+    works: [
+      {
+        id: "work-1",
+        title: "Work1",
+        kind: "전시",
+        description: "작업 이력",
+        imageUrl: "/uploads/creator-assets/work.png",
+        startedAt: new Date("2025-01-01"),
+        endedAt: new Date("2025-03-01"),
+      },
+    ],
   };
 
   it("defaults to 소개 tab", () => {
@@ -171,12 +212,20 @@ describe("StudioTabs", () => {
     // 소개 탭이 활성화되어 있고, 헤더의 스튜디오명이 보임
     expect(screen.getByRole("tab", { name: "소개" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByText("신진작가 스튜디오")).toBeTruthy();
+    expect(screen.getByText("Work1")).toBeTruthy();
+    expect(screen.getByText("2025년 1월 - 2025년 3월")).toBeTruthy();
   });
 
   it("switches to 포스트 tab and shows posts", () => {
     render(<StudioTabs studio={studioWithContent} creatorProfileId="p-1" />);
     fireEvent.click(screen.getByRole("tab", { name: /포스트/ }));
     expect(screen.getByText("P1")).toBeTruthy();
+  });
+
+  it("switches to 작품 tab and shows artworks", () => {
+    render(<StudioTabs studio={studioWithContent} creatorProfileId="p-1" />);
+    fireEvent.click(screen.getByRole("tab", { name: /작품/ }));
+    expect(screen.getByText("Art1")).toBeTruthy();
   });
 
   it("비권한 사용자에게 커뮤니티 격벽 안내를 표시한다 (SPEC-007 FR-002, AC-001)", () => {

@@ -2,12 +2,11 @@
 
 import type { ProgramStatus } from "@prisma/client";
 import { Button } from "@/components/ui/button";
-import { PROGRAM_STATUS_LABELS } from "@/lib/program-status";
+import { effectiveStatus, PROGRAM_STATUS_LABELS } from "@/lib/program-status";
 
 /**
  * 프로그램 생성/수정 폼 (SPEC-004 FR-001, FR-006, 7장 ProgramForm).
- * - 생성: initial 미전달, 상태 선택은 DRAFT/RECRUITING만 노출.
- * - 수정: initial 전달, 본 SPEC이 다루는 전이 가능한 상태(DRAFT/RECRUITING/CLOSED/CANCELLED) 노출.
+ * - 생성/수정 모두 상태 직접 선택 없이 일정 기준으로 자동 계산한다.
  */
 export interface ProgramFormInitial {
   title: string;
@@ -28,15 +27,17 @@ interface ProgramFormProps {
   submitLabel?: string;
 }
 
-const CREATE_STATUSES: ProgramStatus[] = ["RECRUITING", "DRAFT"];
-const EDIT_STATUSES: ProgramStatus[] = ["DRAFT", "RECRUITING", "CLOSED", "CANCELLED"];
-
 function field(value: string | null | undefined): string {
   return value ?? "";
 }
 
 export function ProgramForm({ action, initial, mode = "create", submitLabel }: ProgramFormProps) {
-  const statuses = mode === "edit" ? EDIT_STATUSES : CREATE_STATUSES;
+  const computedStatus = effectiveStatus({
+    status: initial?.status ?? "RECRUITING",
+    startDate: initial?.startDate,
+    endDate: initial?.endDate,
+    recruitDeadline: initial?.recruitDeadline,
+  });
 
   return (
     <form action={action} className="space-y-4">
@@ -156,22 +157,13 @@ export function ProgramForm({ action, initial, mode = "create", submitLabel }: P
         </div>
       </div>
 
-      <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="status">
-          상태
-        </label>
-        <select
-          id="status"
-          name="status"
-          defaultValue={initial?.status ?? "RECRUITING"}
-          className="w-full rounded border px-3 py-2 text-sm"
-        >
-          {statuses.map((s) => (
-            <option key={s} value={s}>
-              {PROGRAM_STATUS_LABELS[s]}
-            </option>
-          ))}
-        </select>
+      <div className="rounded-lg border border-border-default bg-neutral-50 px-3 py-2 text-sm">
+        <p className="font-medium text-text-default">
+          현재 상태: {PROGRAM_STATUS_LABELS[computedStatus]}
+        </p>
+        <p className="mt-1 text-xs text-text-muted">
+          상태는 모집 마감일, 시작일, 종료일을 기준으로 자동 업데이트됩니다.
+        </p>
       </div>
 
       <Button type="submit">{submitLabel ?? (mode === "edit" ? "수정 저장" : "프로그램 만들기")}</Button>

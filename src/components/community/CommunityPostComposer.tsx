@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 /**
  * 커뮤니티 글 작성 폼 (SPEC-007 FR-004, AC-004).
@@ -47,15 +48,17 @@ export function CommunityPostComposer({ creatorProfileId }: CommunityPostCompose
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 border rounded-lg p-4">
-      <input
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-3 rounded-[var(--radius-card)] border border-border-default bg-white p-4"
+    >
+      <Input
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="제목"
         required
         maxLength={200}
-        className="w-full rounded-md border px-3 py-2 text-sm"
       />
       <textarea
         value={content}
@@ -63,9 +66,9 @@ export function CommunityPostComposer({ creatorProfileId }: CommunityPostCompose
         placeholder="내용을 입력하세요"
         required
         rows={4}
-        className="w-full rounded-md border px-3 py-2 text-sm"
+        className="min-h-[100px] w-full resize-none rounded-lg border border-border-strong bg-white px-3 py-2.5 text-sm text-text-default placeholder:text-neutral-400 outline-none transition-colors hover:border-neutral-400 focus-visible:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary/20"
       />
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
       <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={isPending}>
           {isPending ? "작성 중…" : "글 작성"}
