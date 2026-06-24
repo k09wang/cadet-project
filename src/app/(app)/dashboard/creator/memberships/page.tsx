@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { Crown } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import { listMembershipPlansByCreator } from "@/lib/queries/memberships";
 
 /**
@@ -32,41 +35,53 @@ export default async function MembershipsManagePage() {
   const plans = await listMembershipPlansByCreator(profile.id);
 
   return (
-    <main className="max-w-2xl mx-auto p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">멤버십 관리</h1>
+    <main className="space-y-6">
+      <header className="flex items-center justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-text-default">
+            멤버십 관리
+          </h1>
+          <p className="text-sm text-text-muted">플랜과 멤버를 관리하세요</p>
+        </div>
         <Link
           href="/dashboard/creator/memberships/new"
-          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          className={buttonVariants({ variant: "default" })}
         >
           플랜 생성
         </Link>
-      </div>
+      </header>
 
       {plans.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           아직 멤버십 플랜이 없습니다. 플랜을 생성해 보세요.
         </p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {plans.map((plan) => (
-            <li key={plan.id} className="rounded-xl border p-4 space-y-1">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-semibold truncate">{plan.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {plan.priceKrw.toLocaleString("ko-KR")}원 / 월
-                  </p>
-                  {plan.description ? (
-                    <p className="text-sm mt-1 text-muted-foreground line-clamp-2">
-                      {plan.description}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex shrink-0 gap-2">
+            <li
+              key={plan.id}
+              className="flex h-full flex-col overflow-hidden rounded-[var(--radius-card)] border border-border-default bg-white shadow-card"
+            >
+              <div className="flex h-28 items-center justify-center bg-[linear-gradient(135deg,#ede9fe_0%,#ddd6fe_100%)] text-violet-500">
+                <Crown className="size-8" />
+              </div>
+              <div className="flex flex-1 flex-col gap-2 p-5">
+                <Badge variant="membership" className="w-fit">
+                  MEMBERSHIP
+                </Badge>
+                <h3 className="font-heading text-lg font-bold leading-tight text-text-default">
+                  {plan.title}
+                </h3>
+                <p className="text-sm text-text-muted">
+                  월 {plan.priceKrw.toLocaleString("ko-KR")}원
+                </p>
+                {plan.description ? (
+                  <p className="line-clamp-2 text-sm text-text-muted">{plan.description}</p>
+                ) : null}
+                <div className="mt-auto flex items-center justify-end gap-3 border-t border-border-default pt-3">
                   <Link
                     href={`/dashboard/creator/memberships/${plan.id}/edit`}
-                    className="text-sm text-primary hover:underline"
+                    className="text-sm font-semibold text-text-default transition-colors hover:text-brand-primary"
                   >
                     수정
                   </Link>
