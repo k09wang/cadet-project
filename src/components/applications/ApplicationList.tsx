@@ -110,7 +110,7 @@ export function ApplicationList({ applications }: ApplicationListProps) {
       {applications.map((application) => (
         <div
           key={application.id}
-          className="rounded-[var(--radius-card)] border border-border-default bg-white p-5 shadow-[var(--elevation-1)]"
+          className="rounded-[var(--radius-card)] border border-border-default bg-white p-5 shadow-card"
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
