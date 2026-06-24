@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
+import { Logo, GoogleLogo } from "@/components/Logo";
 import { LoginForm } from "./LoginForm";
 import { loginWithCredentials, loginWithGoogle, loginAsDemo } from "./actions";
 
@@ -20,9 +21,9 @@ export default async function LoginPage({
       <Link
         href="/"
         aria-label="ArtBridge 홈으로"
-        className="font-heading text-2xl font-bold text-brand-primary transition-colors hover:text-brand-primary-pressed"
+        className="text-brand-primary transition-colors hover:text-brand-primary-pressed"
       >
-        ArtBridge
+        <Logo className="h-7 w-auto" />
       </Link>
       <section className="w-full max-w-[360px] rounded-lg border border-border-default bg-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
         <div className="space-y-3.5">
@@ -43,7 +44,7 @@ export default async function LoginPage({
                 type="submit"
                 className="flex h-[38px] w-full items-center justify-center gap-2 rounded border border-border-default bg-white px-4 py-2 text-[13px] font-bold leading-5 text-text-default transition-colors hover:border-border-strong hover:bg-surface-subtle"
               >
-                <span className="text-base font-bold text-brand-primary">G</span>
+                <GoogleLogo className="size-[18px]" />
                 구글 로그인
               </button>
             </form>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 import { SignupForm } from "./SignupForm";
 import { register } from "./actions";
 
@@ -18,9 +19,9 @@ export default async function SignupPage({
       <Link
         href="/"
         aria-label="ArtBridge 홈으로"
-        className="font-heading text-2xl font-bold text-brand-primary transition-colors hover:text-brand-primary-pressed"
+        className="text-brand-primary transition-colors hover:text-brand-primary-pressed"
       >
-        ArtBridge
+        <Logo className="h-7 w-auto" />
       </Link>
       <section className="w-full max-w-[680px] space-y-5 rounded-lg border border-border-default bg-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.05)] transition-[max-width] has-[input[name=role]]:max-w-[480px]">
         <div className="space-y-2 text-center">

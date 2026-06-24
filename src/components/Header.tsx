@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { NotificationBell } from "@/components/notification/NotificationBell";
 import { UserMenu } from "@/components/UserMenu";
+import { Logo } from "@/components/Logo";
 import { buttonVariants } from "@/components/ui/button";
 
 const publicNavLinks = [
@@ -31,9 +32,10 @@ export async function Header() {
           <div className="flex min-w-0 items-center gap-4">
             <Link
               href="/"
-              className="shrink-0 font-heading text-[18px] font-bold text-brand-primary transition-colors hover:text-brand-primary-pressed"
+              aria-label="ArtBridge 홈"
+              className="shrink-0 text-brand-primary transition-colors hover:text-brand-primary-pressed"
             >
-              ArtBridge
+              <Logo className="h-[22px] w-auto" />
             </Link>
             <nav className="hidden items-center gap-1 sm:flex">
               {publicNavLinks.map((link) => (
@@ -95,9 +97,10 @@ export async function Header() {
         <div className="flex min-w-0 items-center gap-4">
           <Link
             href="/"
-            className="shrink-0 font-heading text-[18px] font-bold text-brand-primary transition-colors hover:text-brand-primary-pressed"
+            aria-label="ArtBridge 홈"
+            className="shrink-0 text-brand-primary transition-colors hover:text-brand-primary-pressed"
           >
-            ArtBridge
+            <Logo className="h-[22px] w-auto" />
           </Link>
           <nav className="hidden items-center gap-1 sm:flex">
             {navLinks.map((link) => (

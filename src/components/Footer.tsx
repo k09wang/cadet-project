@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 /**
  * 전역 푸터 — 약관·개인정보·고객센터 링크.
@@ -11,9 +12,10 @@ export function Footer() {
           <div className="space-y-2">
             <Link
               href="/"
-              className="font-heading text-[22px] font-bold text-brand-primary transition-colors hover:text-brand-primary-pressed"
+              aria-label="ArtBridge 홈"
+              className="inline-block text-brand-primary transition-colors hover:text-brand-primary-pressed"
             >
-              ArtBridge
+              <Logo className="h-7 w-auto" />
             </Link>
             <p className="text-[13px] text-text-muted">
               창작자와 팬을 잇는 후원 커뮤니티
