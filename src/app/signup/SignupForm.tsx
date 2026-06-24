@@ -58,7 +58,7 @@ export function SignupForm({ action, callbackUrl }: SignupFormProps) {
               <button
                 key={r.value}
                 type="button"
-                className="flex min-h-[250px] cursor-pointer flex-col items-start gap-3.5 rounded-lg border border-border-default bg-white p-5 text-left shadow-[0_2px_4px_rgba(0,0,0,0.05)] transition-colors hover:border-brand-primary hover:bg-brand-subtle/30 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex min-h-[250px] cursor-pointer flex-col items-start gap-3.5 rounded-lg border border-border-default bg-white p-5 text-left shadow-card transition-colors hover:border-brand-primary hover:bg-brand-subtle/30 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={pending}
                 onClick={() => setSelectedRole(r.value)}
               >
@@ -81,7 +81,7 @@ export function SignupForm({ action, callbackUrl }: SignupFormProps) {
         </fieldset>
       ) : (
         <>
-          <div className="mx-auto flex w-full max-w-[440px] items-center justify-between rounded-lg bg-white px-3.5 py-2.5">
+          <div className="mx-auto flex w-full max-w-[440px] items-center justify-between rounded-lg bg-surface-subtle px-3.5 py-2.5">
             <span className="inline-flex items-center gap-2 text-sm font-medium text-text-default">
               <span className="size-2 rounded-full bg-brand-primary" />
               {selectedRoleMeta?.value === "CREATOR" ? "크리에이터로 가입 중" : "팬으로 가입 중"}
@@ -96,7 +96,7 @@ export function SignupForm({ action, callbackUrl }: SignupFormProps) {
             </button>
           </div>
 
-          <div className="mx-auto w-full max-w-[440px] rounded-lg border border-border-default bg-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+          <div className="mx-auto w-full max-w-[440px]">
             <div className="space-y-3.5">
               <h2 className="font-heading text-xl font-bold leading-7 text-text-default">
                 가입 정보 입력
