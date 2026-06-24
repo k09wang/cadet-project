@@ -194,7 +194,7 @@ function SummaryCard({
   return (
     <Link
       href={href}
-      className="rounded-lg border border-border-default bg-white p-4 transition-colors hover:border-brand-primary hover:bg-brand-subtle"
+      className="rounded-[12px] border border-border-default bg-white p-4 transition-colors hover:border-brand-primary hover:bg-brand-subtle"
     >
       <p className="text-xs font-medium text-text-muted">{label}</p>
       <p className="mt-2 font-heading text-xl font-bold text-text-default">
