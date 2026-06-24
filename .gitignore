@@ -109,6 +109,8 @@ logs/
 *.temp
 *.bak
 *.backup
+.tmp-*.zip
+public/uploads/
 
 # ===========================================
 # Backups
@@ -219,3 +221,6 @@ dist-ssr/
 /test-results/
 /playwright-report/
 /playwright/.cache/
+
+# Build/test output
+output/

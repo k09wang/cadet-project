@@ -1,5 +1,5 @@
-import { Heart, MessageCircle, Share2 } from "lucide-react";
 import { formatDateTime } from "@/lib/format";
+import { PostEngagementPanel } from "@/components/posts/PostEngagementPanel";
 
 /**
  * 포스트 전체 본문 표시 컴포넌트 (SPEC-003 FR-010, AC-002, AC-004, AC-005).
@@ -16,10 +16,26 @@ export interface PostDetailProps {
       studioName: string;
       profileImageUrl?: string | null;
     } | null;
+    likesCount?: number;
+    viewerHasLiked?: boolean;
+    comments?: Array<{
+      id: string;
+      body: string;
+      createdAt?: Date | string;
+      author: {
+        name: string;
+      };
+      likesCount?: number;
+    }>;
   };
+  currentUser?: {
+    id: string;
+    name: string;
+    role: "FAN" | "CREATOR";
+  } | null;
 }
 
-export function PostDetail({ post }: PostDetailProps) {
+export function PostDetail({ post, currentUser = null }: PostDetailProps) {
   const studioName = post.creatorProfile?.studioName ?? "ArtBridge Studio";
   const createdAt = formatDateTime(post.createdAt) ?? null;
 
@@ -52,20 +68,13 @@ export function PostDetail({ post }: PostDetailProps) {
         <div className="aspect-[16/7.5] w-full rounded-lg bg-[#e0fbf9]" aria-hidden="true" />
       </div>
 
-      <footer className="mt-3.5 flex items-center gap-5 border-t border-border-default pt-3.5 text-[13px] font-medium text-text-muted">
-        <span className="inline-flex items-center gap-1.5">
-          <Heart className="size-4" />
-          좋아요 0
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <MessageCircle className="size-4" />
-          댓글 0
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <Share2 className="size-4" />
-          공유
-        </span>
-      </footer>
+      <PostEngagementPanel
+        postId={post.id}
+        initialLikesCount={post.likesCount ?? 0}
+        initialLiked={post.viewerHasLiked ?? false}
+        initialComments={post.comments ?? []}
+        currentUser={currentUser}
+      />
     </article>
   );
 }

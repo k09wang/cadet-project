@@ -1,22 +1,13 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
-import {
-  listFanAcceptedApplications,
-  listFanPayments,
-} from "@/lib/queries/contracts";
+import { listFanPayments } from "@/lib/queries/contracts";
 import { Card } from "@/components/ui/card";
 import { ArtworkIssueReporter } from "@/components/artworks/ArtworkIssueReporter";
-import {
-  MyApplicationItem,
-  type MyApplicationItemData,
-} from "@/components/applications/MyApplicationItem";
 import { formatKrw } from "@/lib/format";
 
 /**
- * 팬 마이페이지 결제 대시보드.
- *
- * 상단: 프로그램 참여 진행 대상 — 미결제 건은 프로그램 체크아웃으로 진입.
- * 하단: 결제 내역(상태 배지).
+ * 팬 결제 내역 페이지.
+ * 멤버십, 프로그램, 작품, 포스트 결제 기록과 영수증 액션만 표시한다.
  */
 // 팬 관점 라벨: 정산(RELEASED)은 크리에이터/관리자 정보이므로 팬에게는 '결제 완료'로 통일.
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
@@ -85,95 +76,30 @@ export default async function FanPaymentsPage() {
     );
   }
 
-  const [accepted, payments] = await Promise.all([
-    listFanAcceptedApplications(user.id),
-    listFanPayments(user.id),
-  ]);
+  const payments = await listFanPayments(user.id);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 py-6">
       <header className="space-y-1">
         <h1 className="font-heading text-2xl font-bold tracking-tight text-text-default">
-          마이페이지
+          결제 내역
         </h1>
         <p className="text-sm text-text-muted">
-          신청, 작품 주문, 멤버십, 결제 내역을 한곳에서 확인하세요.
+          멤버십, 프로그램, 작품, 포스트 결제 기록과 영수증을 확인하세요.
         </p>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-2">
-        <Link
-          href="/dashboard/fan/applications"
-          className="rounded-lg border border-border-default p-4 transition-colors hover:border-brand-primary hover:bg-brand-subtle"
-        >
-          <p className="text-sm font-semibold text-text-default">프로그램 신청</p>
-          <p className="mt-1 text-xs text-text-muted">참여 신청과 확정 상태를 확인합니다.</p>
-        </Link>
-        <Link
-          href="/dashboard/fan/artwork-orders"
-          className="rounded-lg border border-border-default p-4 transition-colors hover:border-brand-primary hover:bg-brand-subtle"
-        >
-          <p className="text-sm font-semibold text-text-default">작품 주문</p>
-          <p className="mt-1 text-xs text-text-muted">배송, 수령, 문제 신고를 관리합니다.</p>
-        </Link>
-        <Link
-          href="/dashboard/fan/memberships"
-          className="rounded-lg border border-border-default p-4 transition-colors hover:border-brand-primary hover:bg-brand-subtle"
-        >
-          <p className="text-sm font-semibold text-text-default">멤버십</p>
-          <p className="mt-1 text-xs text-text-muted">가입한 작가 멤버십을 봅니다.</p>
-        </Link>
-        <Link
-          href="/dashboard/fan/payments"
-          className="rounded-lg border border-border-default p-4 transition-colors hover:border-brand-primary hover:bg-brand-subtle"
-        >
-          <p className="text-sm font-semibold text-text-default">결제 내역</p>
-          <p className="mt-1 text-xs text-text-muted">멤버십, 프로그램, 작품 결제를 모아봅니다.</p>
-        </Link>
-      </section>
-
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">프로그램 참여</h2>
-        {accepted.length === 0 ? (
-          <p className="text-sm text-muted-foreground">진행 중인 프로그램 참여가 없습니다.</p>
-        ) : (
-          <ul className="space-y-3">
-            {accepted.map((app) => {
-              const completed = !!app.completionApprovedAt;
-              const paid = app.payment?.status === "PAID" || app.payment?.status === "RELEASED";
-              // 완료 건은 actionSlot을 비워 MyApplicationItem의 리뷰 작성/조회 동선이 노출되게 한다.
-              // 진행 중인 건은 결제 진입 액션을 actionSlot으로 표시한다.
-              const action = completed ? undefined : paid ? (
-                <Link
-                  href={`/programs/${app.program.id}`}
-                  className="text-sm text-green-600 underline-offset-4 hover:underline dark:text-green-400"
-                >
-                  결제 완료 →
-                </Link>
-              ) : (
-                <Link
-                  href={`/programs/${app.program.id}/checkout`}
-                  className="text-sm font-medium text-brand-primary underline-offset-4 hover:underline"
-                >
-                  결제 진행하기 →
-                </Link>
-              );
-              return (
-                <MyApplicationItem
-                  key={app.id}
-                  application={app as MyApplicationItemData}
-                  actionSlot={action}
-                />
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">결제 내역</h2>
         {payments.length === 0 ? (
-          <p className="text-sm text-muted-foreground">결제 내역이 없습니다.</p>
+          <Card className="space-y-3 px-5 py-8 text-center">
+            <p className="text-sm text-muted-foreground">결제 내역이 없습니다.</p>
+            <Link
+              href="/programs"
+              className="text-sm font-medium text-brand-primary underline-offset-4 hover:underline"
+            >
+              프로그램 둘러보기
+            </Link>
+          </Card>
         ) : (
           <ul className="space-y-2">
             {payments.map((p) => {

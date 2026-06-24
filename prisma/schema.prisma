@@ -166,6 +166,8 @@ model User {
   reviewsReceived     Review[]                      @relation("ReviewReviewee")
   communityPosts      CommunityPost[]
   bookmarks           Bookmark[]
+  postLikes           PostLike[]
+  postComments        PostComment[]
   // @MX:NOTE: SPEC-AUTH — Auth.js PrismaAdapter (Google OAuth 계정 연결).
   accounts            Account[]
   sessions            Session[]
@@ -282,10 +284,42 @@ model Post {
 
   creatorProfile CreatorProfile @relation(fields: [creatorProfileId], references: [id], onDelete: Cascade)
   payments       Payment[]
+  likes          PostLike[]
+  comments       PostComment[]
 
   @@index([creatorProfileId, createdAt])
   @@index([creatorProfileId, status, createdAt])
   @@map("posts")
+}
+
+model PostLike {
+  id        String   @id @default(cuid())
+  postId    String   @map("post_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId])
+  @@map("post_likes")
+}
+
+model PostComment {
+  id        String   @id @default(cuid())
+  postId    String   @map("post_id")
+  authorId  String   @map("author_id")
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+  @@map("post_comments")
 }
 
 model Program {

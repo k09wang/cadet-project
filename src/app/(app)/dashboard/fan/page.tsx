@@ -14,8 +14,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { formatKrw } from "@/lib/format";
 
 /**
- * 팬 마이페이지 허브.
- * GNB의 "마이페이지" 도착지로 프로그램 참여, 작품 주문, 멤버십, 결제 내역을 한 화면에서 연결한다.
+ * 팬 홈 허브.
+ * 신청, 주문, 멤버십, 결제 내역의 핵심 요약과 다음 이동 경로를 한 화면에서 연결한다.
  */
 export default async function FanHomePage() {
   const user = await getCurrentUser();
@@ -41,7 +41,7 @@ export default async function FanHomePage() {
     <main className="mx-auto max-w-4xl space-y-8 py-6">
       <header className="space-y-1">
         <h1 className="font-heading text-2xl font-bold tracking-tight text-text-default">
-          마이페이지
+          내 홈
         </h1>
         <p className="text-sm text-text-muted">
           {user.name}님의 신청, 주문, 멤버십, 결제 내역을 한곳에서 확인하세요.
@@ -49,7 +49,11 @@ export default async function FanHomePage() {
       </header>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <SummaryCard label="프로그램 참여" value={activeApplications.length} href="/dashboard/fan/payments" />
+        <SummaryCard
+          label="프로그램 참여"
+          value={activeApplications.length}
+          href="/dashboard/fan/applications"
+        />
         <SummaryCard label="작품 주문" value={artworkOrders.length} href="/dashboard/fan/artwork-orders" />
         <SummaryCard label="멤버십" value={memberships.length} href="/dashboard/fan/memberships" />
         <SummaryCard label="결제 합계" value={formatKrw(totalPaid)} href="/dashboard/fan/payments" />
@@ -57,9 +61,9 @@ export default async function FanHomePage() {
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <HubLink
-          href="/dashboard/fan/payments"
-          title="프로그램 참여·결제 내역"
-          description="프로그램 확정, 결제 내역, 영수증을 확인합니다."
+          href="/dashboard/fan/applications"
+          title="내 신청 현황"
+          description="프로그램 신청, 확정, 진행 상태를 확인합니다."
         />
         <HubLink
           href="/dashboard/fan/artwork-orders"
@@ -90,10 +94,13 @@ export default async function FanHomePage() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-            <h2 className="font-heading text-lg font-semibold text-text-default">
+          <h2 className="font-heading text-lg font-semibold text-text-default">
             프로그램 참여
           </h2>
-          <Link href="/dashboard/fan/payments" className="text-xs text-text-muted hover:text-text-default">
+          <Link
+            href="/dashboard/fan/applications"
+            className="text-xs text-text-muted hover:text-text-default"
+          >
             전체 보기 →
           </Link>
         </div>
@@ -194,7 +201,7 @@ function SummaryCard({
   return (
     <Link
       href={href}
-      className="rounded-lg border border-border-default bg-white p-4 transition-colors hover:border-brand-primary hover:bg-brand-subtle"
+      className="rounded-[12px] border border-border-default bg-white p-4 transition-colors hover:border-brand-primary hover:bg-brand-subtle"
     >
       <p className="text-xs font-medium text-text-muted">{label}</p>
       <p className="mt-2 font-heading text-xl font-bold text-text-default">

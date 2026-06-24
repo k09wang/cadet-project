@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { postCreateSchema } from "@/lib/validation/post";
+import { postCommentCreateSchema, postCreateSchema } from "@/lib/validation/post";
 
 describe("postCreateSchema (FR-012, FR-013, AC-007)", () => {
   it("PUBLIC 포스트는 priceKrw 없이 통과한다", () => {
@@ -75,6 +75,23 @@ describe("postCreateSchema (FR-012, FR-013, AC-007)", () => {
       body: "내용",
       visibility: "INVALID",
     });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("postCommentCreateSchema", () => {
+  it("본문이 있으면 통과한다", () => {
+    const result = postCommentCreateSchema.safeParse({ body: "댓글입니다." });
+    expect(result.success).toBe(true);
+  });
+
+  it("공백만 있으면 실패한다", () => {
+    const result = postCommentCreateSchema.safeParse({ body: "   " });
+    expect(result.success).toBe(false);
+  });
+
+  it("너무 긴 댓글은 실패한다", () => {
+    const result = postCommentCreateSchema.safeParse({ body: "a".repeat(1001) });
     expect(result.success).toBe(false);
   });
 });

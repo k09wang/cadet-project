@@ -97,6 +97,23 @@ describe("PostCardList", () => {
     render(<PostCardList posts={posts} />);
     expect(screen.getByText("이것은 본문입니다")).toBeTruthy();
   });
+
+  it("links each post card to its detail page", () => {
+    const posts = [
+      {
+        id: "post-link",
+        title: "클릭 가능한 포스트",
+        body: "상세로 이동합니다",
+        visibility: "PUBLIC" as const,
+        priceKrw: null,
+      },
+    ];
+    render(<PostCardList posts={posts} />);
+    expect(screen.getByRole("link", { name: /클릭 가능한 포스트/ })).toHaveAttribute(
+      "href",
+      "/posts/post-link",
+    );
+  });
 });
 
 describe("MembershipPlanCardList (FR-005)", () => {

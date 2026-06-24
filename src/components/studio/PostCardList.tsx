@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import type { PostVisibility } from "@prisma/client";
@@ -42,21 +43,23 @@ export function PostCardList({ posts }: PostCardListProps) {
     <ul className="grid gap-3">
       {posts.map((post) => (
         <li key={post.id}>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between gap-2">
-                <CardTitle className="line-clamp-2">{post.title}</CardTitle>
-                <Badge variant={VISIBILITY_VARIANT[post.visibility]}>
-                  {visibilityLabel(post.visibility)}
-                </Badge>
-              </div>
-            </CardHeader>
-            {post.body ? (
-              <CardContent>
-                <p className="line-clamp-3 text-sm leading-5 text-text-muted">{post.body}</p>
-              </CardContent>
-            ) : null}
-          </Card>
+          <Link href={`/posts/${post.id}`} className="block rounded-[var(--radius-card)]">
+            <Card className="h-full transition-colors hover:border-brand-primary/40">
+              <CardHeader>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="line-clamp-2">{post.title}</CardTitle>
+                  <Badge variant={VISIBILITY_VARIANT[post.visibility]}>
+                    {visibilityLabel(post.visibility)}
+                  </Badge>
+                </div>
+              </CardHeader>
+              {post.body ? (
+                <CardContent>
+                  <p className="line-clamp-3 text-sm leading-5 text-text-muted">{post.body}</p>
+                </CardContent>
+              ) : null}
+            </Card>
+          </Link>
         </li>
       ))}
     </ul>

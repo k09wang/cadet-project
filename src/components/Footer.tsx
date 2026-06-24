@@ -1,4 +1,11 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
+import {
+  FacebookIcon,
+  LinkedInIcon,
+  NaverBlogIcon,
+  YouTubeIcon,
+} from "@/components/SocialIcons";
 
 /**
  * 전역 푸터 — 약관·개인정보·고객센터 링크.
@@ -11,9 +18,10 @@ export function Footer() {
           <div className="space-y-2">
             <Link
               href="/"
-              className="font-heading text-[22px] font-bold text-brand-primary transition-colors hover:text-brand-primary-pressed"
+              aria-label="ArtBridge 홈"
+              className="inline-block text-brand-primary transition-colors hover:text-brand-primary-pressed"
             >
-              ArtBridge
+              <Logo className="h-7 w-auto" />
             </Link>
             <p className="text-[13px] text-text-muted">
               창작자와 팬을 잇는 후원 커뮤니티
@@ -64,10 +72,11 @@ export function Footer() {
           <p className="text-xs text-text-muted">
             © 2026 ArtBridge. All rights reserved.
           </p>
-          <div className="flex gap-2" aria-hidden="true">
-            <span className="size-4 rounded-full bg-neutral-200" />
-            <span className="size-4 rounded-full bg-neutral-200" />
-            <span className="size-4 rounded-full bg-neutral-200" />
+          <div className="flex items-center gap-4 text-text-muted" aria-label="소셜 미디어">
+            <FacebookIcon className="size-5 transition-colors hover:text-brand-primary" />
+            <LinkedInIcon className="size-5 transition-colors hover:text-brand-primary" />
+            <NaverBlogIcon className="size-5 transition-colors hover:text-brand-primary" />
+            <YouTubeIcon className="size-5 transition-colors hover:text-brand-primary" />
           </div>
         </div>
       </div>

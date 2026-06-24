@@ -39,6 +39,8 @@
 - 도메인 wash(연틴트): membership-wash `#f5f3ff`(164:892) / community-wash `#ecfdf5`(164:893) / brand primary-wash `#f2fefd`(14:329).
 - **폰트**: 원격 use_figma 환경엔 Pretendard 미설치 → **Noto Sans KR** 사용(코드 globals.css fallback과 정합). Inter Regular→Regular / Medium→Medium / Semi Bold→Bold / Bold→Bold.
 - 모든 컴포넌트는 색/폰트 토큰 바인딩 일괄 정리 완료(2026-06-23).
+- **UI 고급화 P1~P4(2026-06-24)**: 그림자·쿨그레이 배경·미디어 아이콘·아바타 그라데이션·아코디언 chevron·통계패널 정리. 상세는 `ArtBridge_UI_고급화_계획.md`.
+- **전수 QA 정리(2026-06-24)**: 반복 더미 다양화(16/17/21/24/30/31/32/06 등)·맥락 텍스트 교정(18 프로필·24/33 버튼·21/28/39 리스트)·EmptyState 오배치 제거(15/16/28/39)·**Fan 헤더 nav "관심작가" 3중복 버그 수정**(마스터 83:792, 관심 작가/내 멤버십/내 신청·결제로). 함정: 인스턴스 substring 매칭이 헤더 등 의도외 노드를 잡을 수 있음 → 인스턴스 범위 내 검색.
 - **Effect Style 3종(2026-06-24 UI 고급화)**: `elevation/card`=`S:90dfa38ca9208e88fb40b0052764027d8244283d,` / `elevation/raised`=`S:d3d916a10ab6d249ed023ad53879564ae882393d,` / `elevation/overlay`=`S:0645a855de44bdb299efd17e0d21261c5cb5e4fa,`. 카드 마스터에 `node.setEffectStyleIdAsync(id)`로 적용.
 - **셸 배경**: 화면 Main 배경 = 쿨그레이 `#F7F8FA`(rgb 0.969,0.973,0.980). 셸 Content itemSpacing 32, paddingTop 56.
 
@@ -49,7 +51,7 @@
 ### 셸 (App Shell 페이지)
 | 컴포넌트 | ID |
 |---|---|
-| App Header set | 84:813 → Role=Creator(82:792) / Fan(83:792) / Guest(84:792) |
+| App Header set | 84:813 → Role=Creator(82:792) / Fan(83:792) / Guest(84:792) · 메뉴 좌측 고정 구조(MIN 정렬 + Spacer After Menu grow=1). Fan 메뉴 프레임 `277:13130`에 Menu Item 복제로 항목 추가 |
 | Page Header | 86:792 (eyebrow/title/desc) |
 | Studio Summary Card | 94:792 (1100w, 크리에이터 프로필) |
 | Quick Action Tile set | 92:844 → Brand(91:792)/Program(92:792)/Membership(92:805)/Success(92:817)/Community(92:830), 자연폭 540 |
