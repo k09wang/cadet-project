@@ -6,6 +6,12 @@ import {
   ProgramStatus,
   PaymentStatus,
   SettlementStatus,
+  ArtworkStatus,
+  ArtworkOrderStatus,
+  ArtworkIssueType,
+  ArtworkIssueStatus,
+  CreatorPayoutBusinessType,
+  PayoutVerificationStatus,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -26,6 +32,7 @@ const FEE_RATE = 0.1; // 10% platform fee (tech.md §8)
 // 모든 시드 계정이 동일 비밀번호로 Credentials 로그인 가능하다.
 const DEMO_PASSWORD = "demo1234!";
 const DEMO_PASSWORD_HASH = bcrypt.hashSync(DEMO_PASSWORD, 10);
+const ASSET_BASE = "/demo-assets";
 
 async function main() {
   console.log("→ Seeding ArtBridge demo data…");
@@ -42,12 +49,17 @@ async function main() {
   const plans = await upsertPlans(profile.id);
   const programs = await upsertPrograms(profile.id);
   await upsertPosts(profile.id);
+  await upsertCreatorWorks(profile.id, "seo-yoon");
+  const artworks = await upsertArtworks(profile.id, "seo-yoon");
 
   // SPEC-002 NFR-001: 두 번째 크리에이터도 자체 plans/posts/programs 보유
   const profile2 = profiles[1];
   await upsertPlansFor(profile2.id, "demo2-plan-1");
   await upsertProgramsFor(profile2.id, "demo2-program-1");
   await upsertPostsFor(profile2.id, "demo2-post-1", "demo2-post-2");
+  await upsertCreatorWorks(profile2.id, "min-jae");
+  const artworks2 = await upsertArtworks(profile2.id, "min-jae");
+  await upsertPayoutAccounts(profiles);
 
   const membership = await upsertMembership(fans[0].id, plans[0].id);
   const acceptedApp = await upsertApplications(programs[0].id, fans);
@@ -55,6 +67,7 @@ async function main() {
 
   const payments = await upsertPayments(membership.id, contract.id, fans[0].id);
   await upsertSettlements(payments);
+  await upsertArtworkOrders(fans, [...artworks, ...artworks2]);
 
   // SPEC-009 NFR-007: PAID 포스트 단건 구매 시연 — fans[1]은 demo-post-3을 구매 완료,
   // fans[0]은 미구매 상태로 두어 잠금/열림 두 화면을 바로 시연한다.
@@ -89,14 +102,14 @@ async function main() {
 // SPEC-001 AC-005: minimum 2 creators (each with a CreatorProfile) + 2 fans.
 async function upsertCreators() {
   const defs = [
-    { email: "creator@artbridge.demo", name: "데모 크리에이터" },
-    { email: "creator2@artbridge.demo", name: "데모 크리에이터 2" },
+    { email: "creator@artbridge.demo", name: "이서윤" },
+    { email: "creator2@artbridge.demo", name: "강민재" },
   ];
   return Promise.all(
     defs.map((d) =>
       prisma.user.upsert({
         where: { email: d.email },
-        update: { passwordHash: DEMO_PASSWORD_HASH },
+        update: { name: d.name, passwordHash: DEMO_PASSWORD_HASH },
         create: {
           email: d.email,
           name: d.name,
@@ -109,15 +122,18 @@ async function upsertCreators() {
 }
 
 async function upsertFans() {
-  const emails = ["fan1@artbridge.demo", "fan2@artbridge.demo"];
+  const defs = [
+    { email: "fan1@artbridge.demo", name: "정하린" },
+    { email: "fan2@artbridge.demo", name: "박도윤" },
+  ];
   return Promise.all(
-    emails.map((email, i) =>
+    defs.map((d) =>
       prisma.user.upsert({
-        where: { email },
-        update: { passwordHash: DEMO_PASSWORD_HASH },
+        where: { email: d.email },
+        update: { name: d.name, passwordHash: DEMO_PASSWORD_HASH },
         create: {
-          email,
-          name: `데모 팬 ${i + 1}`,
+          email: d.email,
+          name: d.name,
           role: Role.FAN,
           passwordHash: DEMO_PASSWORD_HASH,
         },
@@ -131,20 +147,20 @@ async function upsertFans() {
 // SPEC-002 NFR-001: 각 크리에이터 프로필에 5개 확장 필드 모두 채움.
 const CREATOR_PROFILE_DEFS = [
   {
-    studioName: "신진작가 스튜디오",
-    bio: "현대 미술 작가 데모 스튜디오.",
-    category: "회화",
-    coverImageUrl: "https://picsum.photos/seed/creator1-cover/1200/400",
-    profileImageUrl: "https://picsum.photos/seed/creator1-profile/400/400",
+    studioName: "서윤 라이트 아틀리에",
+    bio: "빛의 결, 투명한 안료, 얇은 레이어를 쌓아 도시의 오후를 회화와 오브제로 번역합니다.",
+    category: "회화 · 설치",
+    coverImageUrl: `${ASSET_BASE}/seo-yoon-cover.jpg`,
+    profileImageUrl: `${ASSET_BASE}/seo-yoon-profile.jpg`,
     instagramUrl: "https://instagram.com/artbridge_demo",
     websiteUrl: "https://example.com/creator1",
   },
   {
-    studioName: "조각공방 스튜디오",
-    bio: "입체 조각과 설치 미술을 다루는 데모 스튜디오.",
-    category: "조각",
-    coverImageUrl: "https://picsum.photos/seed/creator2-cover/1200/400",
-    profileImageUrl: "https://picsum.photos/seed/creator2-profile/400/400",
+    studioName: "민재 세라믹 스튜디오",
+    bio: "흙, 유약, 금속 프레임을 조합해 손으로 만지는 조형과 생활 속 작은 설치물을 만듭니다.",
+    category: "도예 · 조각",
+    coverImageUrl: `${ASSET_BASE}/min-jae-cover.jpg`,
+    profileImageUrl: `${ASSET_BASE}/min-jae-profile.jpg`,
     instagramUrl: "https://instagram.com/artbridge_demo2",
     websiteUrl: "https://example.com/creator2",
   },
@@ -165,15 +181,29 @@ async function ensureCreatorProfile(userId: string, index: number) {
 
 async function upsertPlans(creatorProfileId: string) {
   const defs = [
-    { id: "demo-plan-1", title: "브론즈 멤버십", priceKrw: 5000 },
-    { id: "demo-plan-2", title: "실버 멤버십", priceKrw: 10000 },
+    {
+      id: "demo-plan-1",
+      title: "월간 작업실 노트",
+      priceKrw: 5000,
+      description: "작업 과정 사진, 재료 기록, 다음 공개작 미리보기를 매주 받아봅니다.",
+    },
+    {
+      id: "demo-plan-2",
+      title: "컬렉터 프리뷰",
+      priceKrw: 12000,
+      description: "신작 선공개, 멤버 전용 포스트, 소규모 온라인 크리틱에 참여합니다.",
+    },
   ];
   return Promise.all(
     defs.map((d) =>
       prisma.membershipPlan.upsert({
         where: { id: d.id },
-        update: {},
-        create: { ...d, creatorProfileId, description: `${d.title} 데모 플랜` },
+        update: {
+          title: d.title,
+          description: d.description,
+          priceKrw: d.priceKrw,
+        },
+        create: { ...d, creatorProfileId },
       }),
     ),
   );
@@ -185,14 +215,21 @@ async function upsertPrograms(creatorProfileId: string) {
   return [
     await prisma.program.upsert({
       where: { id: "demo-program-1" },
-      update: {},
+      update: {
+        title: "빛을 기록하는 아크릴 레이어링",
+        description: "투명 아크릴 판과 색면을 겹쳐 작은 설치 회화를 완성하는 4주 프로그램입니다.",
+        category: "온라인 클래스",
+        priceKrw: 45000,
+        maxParticipants: 10,
+        status: ProgramStatus.IN_PROGRESS,
+      },
       create: {
         id: "demo-program-1",
         creatorProfileId,
-        title: "데모 클럽 프로그램",
-        description: "팬 참여형 데모 프로그램",
-        category: "클래스",
-        priceKrw: 30000,
+        title: "빛을 기록하는 아크릴 레이어링",
+        description: "투명 아크릴 판과 색면을 겹쳐 작은 설치 회화를 완성하는 4주 프로그램입니다.",
+        category: "온라인 클래스",
+        priceKrw: 45000,
         maxParticipants: 10,
         // SPEC-006 FR-007 정합: ACCEPTED + PAID 결제 참여자(demo-app-1)를 가진
         // 프로그램은 결제 완료 시점에 IN_PROGRESS 이다. recruitDeadline은 보존.
@@ -203,14 +240,21 @@ async function upsertPrograms(creatorProfileId: string) {
     // SPEC-008 NFR-004: 완료된 프로그램 + 리뷰로 크리에이터 평점이 빈 상태로 시작하지 않도록.
     await prisma.program.upsert({
       where: { id: "demo-program-completed" },
-      update: {},
+      update: {
+        title: "작업실 컬러 리서치 워크숍",
+        description: "개인 팔레트를 찾고 한 장의 색채 기록으로 정리한 지난 워크숍입니다.",
+        category: "워크숍",
+        priceKrw: 28000,
+        maxParticipants: 8,
+        status: ProgramStatus.COMPLETED,
+      },
       create: {
         id: "demo-program-completed",
         creatorProfileId,
-        title: "데모 완료 워크숍",
-        description: "이미 완료된 데모 프로그램 — 리뷰 집계용.",
+        title: "작업실 컬러 리서치 워크숍",
+        description: "개인 팔레트를 찾고 한 장의 색채 기록으로 정리한 지난 워크숍입니다.",
         category: "워크숍",
-        priceKrw: 20000,
+        priceKrw: 28000,
         maxParticipants: 8,
         recruitDeadline: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         status: ProgramStatus.COMPLETED,
@@ -222,23 +266,184 @@ async function upsertPrograms(creatorProfileId: string) {
 // ──────────────────────────── 5. Post ────────────────────────────
 
 async function upsertPosts(creatorProfileId: string) {
-  const defs: Array<{ id: string; visibility: PostVisibility; priceKrw: number | null }> = [
-    { id: "demo-post-1", visibility: PostVisibility.PUBLIC, priceKrw: null },
-    { id: "demo-post-2", visibility: PostVisibility.MEMBER_ONLY, priceKrw: null },
-    { id: "demo-post-3", visibility: PostVisibility.PAID, priceKrw: 5000 },
+  const defs: Array<{
+    id: string;
+    title: string;
+    body: string;
+    visibility: PostVisibility;
+    priceKrw: number | null;
+  }> = [
+    {
+      id: "demo-post-1",
+      title: "6월의 빛 샘플과 안료 테스트",
+      body: "새 작업에 사용할 투명 안료와 반사 필름을 테스트했습니다. 오후 4시의 빛을 기준으로 색이 어떻게 바뀌는지 기록합니다.",
+      visibility: PostVisibility.PUBLIC,
+      priceKrw: null,
+    },
+    {
+      id: "demo-post-2",
+      title: "멤버에게 먼저 공개하는 신작 드로잉",
+      body: "다음 전시의 출발점이 될 드로잉 5점을 정리했습니다. 멤버 피드백을 받고 최종 색면을 결정할 예정입니다.",
+      visibility: PostVisibility.MEMBER_ONLY,
+      priceKrw: null,
+    },
+    {
+      id: "demo-post-3",
+      title: "컬렉터 노트: 작은 작품을 보관하는 법",
+      body: "소형 회화와 오브제를 오래 보관하기 위한 조도, 습도, 액자 선택 기준을 정리했습니다.",
+      visibility: PostVisibility.PAID,
+      priceKrw: 5000,
+    },
   ];
   return Promise.all(
-    defs.map((d, i) =>
+    defs.map((d) =>
       prisma.post.upsert({
         where: { id: d.id },
-        update: {},
+        update: {
+          title: d.title,
+          body: d.body,
+          visibility: d.visibility,
+          priceKrw: d.priceKrw,
+        },
         create: {
           id: d.id,
           creatorProfileId,
-          title: `데모 포스트 ${i + 1}`,
-          body: `데모 본문 ${i + 1}`,
+          title: d.title,
+          body: d.body,
           visibility: d.visibility,
           priceKrw: d.priceKrw,
+        },
+      }),
+    ),
+  );
+}
+
+// ──────────────────────────── 5-1. CreatorWork / Artwork ────────────────────────────
+
+async function upsertCreatorWorks(creatorProfileId: string, key: "seo-yoon" | "min-jae") {
+  const defs =
+    key === "seo-yoon"
+      ? [
+          {
+            id: "demo-work-seo-yoon-1",
+            title: "라이트 룸 리서치",
+            kind: "전시",
+            description: "반투명 패널과 회화 레이어를 한 공간에 배치해 관람 동선에 따라 색이 변하는 설치 작업입니다.",
+            imageUrl: `${ASSET_BASE}/work-light-room.jpg`,
+            startedAt: new Date("2026-03-01"),
+            endedAt: new Date("2026-05-18"),
+          },
+        ]
+      : [
+          {
+            id: "demo-work-min-jae-1",
+            title: "세라믹 테이블 오브제",
+            kind: "프로젝트",
+            description: "손으로 빚은 작은 조형을 테이블 위에 놓이는 일상 오브제로 확장한 시리즈입니다.",
+            imageUrl: `${ASSET_BASE}/work-ceramic-table.jpg`,
+            startedAt: new Date("2026-02-10"),
+            endedAt: new Date("2026-04-30"),
+          },
+        ];
+
+  return Promise.all(
+    defs.map((d) =>
+      prisma.creatorWork.upsert({
+        where: { id: d.id },
+        update: {
+          title: d.title,
+          kind: d.kind,
+          description: d.description,
+          imageUrl: d.imageUrl,
+          startedAt: d.startedAt,
+          endedAt: d.endedAt,
+        },
+        create: {
+          ...d,
+          creatorProfileId,
+        },
+      }),
+    ),
+  );
+}
+
+async function upsertArtworks(creatorProfileId: string, key: "seo-yoon" | "min-jae") {
+  const defs =
+    key === "seo-yoon"
+      ? [
+          {
+            id: "demo-artwork-1",
+            title: "오후의 잔상 01",
+            description: "청록과 흰빛을 얇게 겹친 소형 회화 오브제입니다.",
+            imageUrl: `${ASSET_BASE}/artwork-01.jpg`,
+            priceKrw: 180000,
+            stock: 2,
+            status: ArtworkStatus.PUBLISHED,
+          },
+          {
+            id: "demo-artwork-2",
+            title: "투명한 창",
+            description: "반사 필름과 안료 레이어가 보는 각도에 따라 달라지는 작품입니다.",
+            imageUrl: `${ASSET_BASE}/artwork-03.jpg`,
+            priceKrw: 260000,
+            stock: 1,
+            status: ArtworkStatus.PUBLISHED,
+          },
+          {
+            id: "demo-artwork-3",
+            title: "작은 빛의 지도",
+            description: "컬렉터 프리뷰에서 먼저 공개했던 신작 에디션입니다.",
+            imageUrl: `${ASSET_BASE}/artwork-04.jpg`,
+            priceKrw: 145000,
+            stock: 0,
+            status: ArtworkStatus.SOLD,
+          },
+        ]
+      : [
+          {
+            id: "demo-artwork-4",
+            title: "흙의 곡선",
+            description: "유약의 흐름과 손자국을 그대로 남긴 세라믹 조각입니다.",
+            imageUrl: `${ASSET_BASE}/artwork-02.jpg`,
+            priceKrw: 220000,
+            stock: 1,
+            status: ArtworkStatus.PUBLISHED,
+          },
+          {
+            id: "demo-artwork-5",
+            title: "테이블 스톤",
+            description: "책상 위에 놓는 작은 조형 오브제 시리즈입니다.",
+            imageUrl: `${ASSET_BASE}/artwork-05.jpg`,
+            priceKrw: 98000,
+            stock: 3,
+            status: ArtworkStatus.PUBLISHED,
+          },
+          {
+            id: "demo-artwork-6",
+            title: "분홍 유약 테스트 피스",
+            description: "멤버 전용 포스트에서 공개했던 유약 테스트 결과물입니다.",
+            imageUrl: `${ASSET_BASE}/artwork-06.jpg`,
+            priceKrw: 125000,
+            stock: 1,
+            status: ArtworkStatus.PUBLISHED,
+          },
+        ];
+
+  return Promise.all(
+    defs.map((d) =>
+      prisma.artwork.upsert({
+        where: { id: d.id },
+        update: {
+          title: d.title,
+          description: d.description,
+          imageUrl: d.imageUrl,
+          priceKrw: d.priceKrw,
+          stock: d.stock,
+          status: d.status,
+        },
+        create: {
+          ...d,
+          creatorProfileId,
         },
       }),
     ),
@@ -248,16 +453,19 @@ async function upsertPosts(creatorProfileId: string) {
 // ──────────────── SPEC-002 NFR-001: creator2 전용 plans/programs/posts ────────────────
 
 async function upsertPlansFor(creatorProfileId: string, id: string) {
+  const plan = {
+    title: "세라믹 스케치 클럽",
+    description: "유약 테스트, 소성 전후 기록, 테이블 오브제 제작 과정을 멤버 전용으로 공유합니다.",
+    priceKrw: 9000,
+  };
   return [
     await prisma.membershipPlan.upsert({
       where: { id },
-      update: {},
+      update: plan,
       create: {
         id,
         creatorProfileId,
-        title: "조각공방 멤버십",
-        description: "두 번째 크리에이터 데모 멤버십 플랜",
-        priceKrw: 8000,
+        ...plan,
       },
     }),
   ];
@@ -267,14 +475,21 @@ async function upsertProgramsFor(creatorProfileId: string, id: string) {
   return [
     await prisma.program.upsert({
       where: { id },
-      update: {},
+      update: {
+        title: "손바닥 조각과 유약 실험",
+        description: "작은 도자 조각을 빚고, 표면 질감과 유약 조합을 실험하는 오프라인 워크숍입니다.",
+        category: "오프라인 워크숍",
+        priceKrw: 36000,
+        maxParticipants: 8,
+        status: ProgramStatus.RECRUITING,
+      },
       create: {
         id,
         creatorProfileId,
-        title: "조각 워크숍",
-        description: "두 번째 크리에이터 데모 프로그램",
-        category: "워크숍",
-        priceKrw: 25000,
+        title: "손바닥 조각과 유약 실험",
+        description: "작은 도자 조각을 빚고, 표면 질감과 유약 조합을 실험하는 오프라인 워크숍입니다.",
+        category: "오프라인 워크숍",
+        priceKrw: 36000,
         maxParticipants: 8,
         // SPEC-004 NFR-001: 시드 프로그램은 recruitDeadline을 채운다 (미래 일자).
         recruitDeadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
@@ -291,24 +506,34 @@ async function upsertPostsFor(
 ) {
   await prisma.post.upsert({
     where: { id: publicId },
-    update: {},
+    update: {
+      title: "오늘의 유약 테스트 기록",
+      body: "매트한 청록 유약과 철분이 많은 흙의 조합을 비교했습니다. 표면 질감이 예상보다 부드럽게 올라왔습니다.",
+      visibility: PostVisibility.PUBLIC,
+      priceKrw: null,
+    },
     create: {
       id: publicId,
       creatorProfileId,
-      title: "조각공방 공개 포스트",
-      body: "공개 데모 포스트입니다.",
+      title: "오늘의 유약 테스트 기록",
+      body: "매트한 청록 유약과 철분이 많은 흙의 조합을 비교했습니다. 표면 질감이 예상보다 부드럽게 올라왔습니다.",
       visibility: PostVisibility.PUBLIC,
       priceKrw: null,
     },
   });
   await prisma.post.upsert({
     where: { id: memberId },
-    update: {},
+    update: {
+      title: "멤버 전용: 실패한 소성에서 배운 것",
+      body: "이번 가마에서는 균열이 생긴 조각이 있었습니다. 원인과 다음 배치에서 바꿀 점을 자세히 남깁니다.",
+      visibility: PostVisibility.MEMBER_ONLY,
+      priceKrw: null,
+    },
     create: {
       id: memberId,
       creatorProfileId,
-      title: "조각공방 멤버 포스트",
-      body: "멤버 전용 데모 포스트입니다.",
+      title: "멤버 전용: 실패한 소성에서 배운 것",
+      body: "이번 가마에서는 균열이 생긴 조각이 있었습니다. 원인과 다음 배치에서 바꿀 점을 자세히 남깁니다.",
       visibility: PostVisibility.MEMBER_ONLY,
       priceKrw: null,
     },
@@ -425,6 +650,172 @@ async function upsertSettlements(payments: Array<{ id: string; amount: number; f
   );
 }
 
+// ──────────────────────────── 10-1. ArtworkOrder / Shipment / Issue ────────────────────────────
+
+async function upsertArtworkOrders(
+  fans: Array<{ id: string }>,
+  artworks: Array<{ id: string; priceKrw: number }>,
+) {
+  const byId = new Map(artworks.map((artwork) => [artwork.id, artwork]));
+  const firstArtwork = byId.get("demo-artwork-1");
+  const secondArtwork = byId.get("demo-artwork-4");
+  if (!fans[0] || !fans[1] || !firstArtwork || !secondArtwork) return;
+
+  const order1 = await prisma.artworkOrder.upsert({
+    where: { id: "demo-artwork-order-1" },
+    update: {
+      status: ArtworkOrderStatus.SHIPPED,
+      recipientName: "정하린",
+      recipientPhone: "010-1234-5678",
+      shippingAddress: "서울시 성동구 아트브릿지로 24",
+      shippingMemo: "경비실에 맡겨주세요.",
+      itemAmount: firstArtwork.priceKrw,
+      shippingFeeKrw: 3000,
+      totalAmount: firstArtwork.priceKrw + 3000,
+      paidAt: new Date(),
+    },
+    create: {
+      id: "demo-artwork-order-1",
+      artworkId: firstArtwork.id,
+      fanUserId: fans[0].id,
+      status: ArtworkOrderStatus.SHIPPED,
+      recipientName: "정하린",
+      recipientPhone: "010-1234-5678",
+      shippingAddress: "서울시 성동구 아트브릿지로 24",
+      shippingMemo: "경비실에 맡겨주세요.",
+      itemAmount: firstArtwork.priceKrw,
+      shippingFeeKrw: 3000,
+      totalAmount: firstArtwork.priceKrw + 3000,
+      paidAt: new Date(),
+    },
+  });
+
+  await prisma.artworkShipment.upsert({
+    where: { orderId: order1.id },
+    update: {
+      carrier: "CJ대한통운",
+      trackingNo: "581234567890",
+      shippedAt: new Date(),
+      deliveredAt: null,
+    },
+    create: {
+      orderId: order1.id,
+      carrier: "CJ대한통운",
+      trackingNo: "581234567890",
+      shippedAt: new Date(),
+      deliveredAt: null,
+    },
+  });
+
+  const order2 = await prisma.artworkOrder.upsert({
+    where: { id: "demo-artwork-order-2" },
+    update: {
+      status: ArtworkOrderStatus.ISSUE_OPENED,
+      recipientName: "박도윤",
+      recipientPhone: "010-9876-5432",
+      shippingAddress: "부산시 수영구 갤러리길 12",
+      shippingMemo: "문 앞에 놓아주세요.",
+      itemAmount: secondArtwork.priceKrw,
+      shippingFeeKrw: 3000,
+      totalAmount: secondArtwork.priceKrw + 3000,
+      paidAt: new Date(),
+    },
+    create: {
+      id: "demo-artwork-order-2",
+      artworkId: secondArtwork.id,
+      fanUserId: fans[1].id,
+      status: ArtworkOrderStatus.ISSUE_OPENED,
+      recipientName: "박도윤",
+      recipientPhone: "010-9876-5432",
+      shippingAddress: "부산시 수영구 갤러리길 12",
+      shippingMemo: "문 앞에 놓아주세요.",
+      itemAmount: secondArtwork.priceKrw,
+      shippingFeeKrw: 3000,
+      totalAmount: secondArtwork.priceKrw + 3000,
+      paidAt: new Date(),
+    },
+  });
+
+  await prisma.artworkOrderIssue.upsert({
+    where: { id: "demo-artwork-issue-1" },
+    update: {
+      type: ArtworkIssueType.NOT_AS_DESCRIBED,
+      status: ArtworkIssueStatus.REVIEWING,
+      message: "작품 표면 색감이 상세 이미지보다 어둡게 보여 확인을 요청했습니다.",
+      imageUrl: `${ASSET_BASE}/artwork-02.jpg`,
+    },
+    create: {
+      id: "demo-artwork-issue-1",
+      orderId: order2.id,
+      userId: fans[1].id,
+      type: ArtworkIssueType.NOT_AS_DESCRIBED,
+      status: ArtworkIssueStatus.REVIEWING,
+      message: "작품 표면 색감이 상세 이미지보다 어둡게 보여 확인을 요청했습니다.",
+      imageUrl: `${ASSET_BASE}/artwork-02.jpg`,
+    },
+  });
+
+  await Promise.all([
+    upsertArtworkPayment("demo-artwork-payment-1", order1.id, fans[0].id, order1.totalAmount),
+    upsertArtworkPayment("demo-artwork-payment-2", order2.id, fans[1].id, order2.totalAmount),
+  ]);
+}
+
+async function upsertArtworkPayment(
+  id: string,
+  artworkOrderId: string,
+  fanUserId: string,
+  amount: number,
+) {
+  const feeKrw = Math.round(amount * FEE_RATE);
+  const payment = await prisma.payment.upsert({
+    where: { id },
+    update: {
+      artworkOrderId,
+      fanUserId,
+      amount,
+      feeKrw,
+      status: PaymentStatus.PAID,
+      provider: "mock",
+      providerTxId: `${id}-tx`,
+      merchantUid: `${id}-merchant`,
+    },
+    create: {
+      id,
+      artworkOrderId,
+      fanUserId,
+      amount,
+      feeKrw,
+      status: PaymentStatus.PAID,
+      provider: "mock",
+      providerTxId: `${id}-tx`,
+      merchantUid: `${id}-merchant`,
+    },
+  });
+  await prisma.settlement.upsert({
+    where: { paymentId: payment.id },
+    update: {
+      sourceType: "ARTWORK_ORDER",
+      sourceId: artworkOrderId,
+      grossAmount: amount,
+      feeKrw,
+      payout: amount - feeKrw,
+      status: SettlementStatus.AVAILABLE,
+      availableAt: new Date(),
+    },
+    create: {
+      paymentId: payment.id,
+      sourceType: "ARTWORK_ORDER",
+      sourceId: artworkOrderId,
+      grossAmount: amount,
+      feeKrw,
+      payout: amount - feeKrw,
+      status: SettlementStatus.AVAILABLE,
+      availableAt: new Date(),
+    },
+  });
+}
+
 // ──────────────── SPEC-009: PAID 포스트 단건 구매 (Payment + Settlement) ────────────────
 
 async function upsertPostPurchase(postId: string, fanUserId: string) {
@@ -519,13 +910,16 @@ async function upsertCreatorNotification(userId: string) {
 async function upsertCommunityPost(creatorProfileId: string, authorId: string) {
   return prisma.communityPost.upsert({
     where: { id: "demo-community-1" },
-    update: {},
+    update: {
+      title: "이번 주 멤버 피드백 스레드",
+      content: "신작 드로잉의 색면 조합을 고르는 중입니다. 마음에 드는 팔레트와 이유를 댓글로 남겨주세요.",
+    },
     create: {
       id: "demo-community-1",
       creatorProfileId,
       authorId,
-      title: "데모 커뮤니티 글",
-      content: "멤버 전용 커뮤니티 첫 글입니다.",
+      title: "이번 주 멤버 피드백 스레드",
+      content: "신작 드로잉의 색면 조합을 고르는 중입니다. 마음에 드는 팔레트와 이유를 댓글로 남겨주세요.",
     },
   });
 }
@@ -534,13 +928,16 @@ async function upsertCommunityPost(creatorProfileId: string, authorId: string) {
 async function upsertCommunityPostSecond(creatorProfileId: string, authorId: string) {
   return prisma.communityPost.upsert({
     where: { id: "demo-community-2" },
-    update: {},
+    update: {
+      title: "7월 온라인 오픈스튜디오 안내",
+      content: "멤버십 참여자를 대상으로 7월 첫째 주 온라인 오픈스튜디오를 엽니다. 작업 과정과 보관 팁을 함께 나눌 예정입니다.",
+    },
     create: {
       id: "demo-community-2",
       creatorProfileId,
       authorId,
-      title: "이번 주 작업 공지",
-      content: "멤버 여러분께 드리는 두 번째 커뮤니티 공지입니다.",
+      title: "7월 온라인 오픈스튜디오 안내",
+      content: "멤버십 참여자를 대상으로 7월 첫째 주 온라인 오픈스튜디오를 엽니다. 작업 과정과 보관 팁을 함께 나눌 예정입니다.",
     },
   });
 }
@@ -564,30 +961,86 @@ async function upsertReviews(
   if (!revieweeId) return;
   await prisma.review.upsert({
     where: { id: "demo-review-1" },
-    update: {},
+    update: {
+      rating: 4,
+      comment: "재료 선택 이유를 차근차근 설명해줘서 내 작업에도 바로 적용할 수 있었어요.",
+      tags: ["구성이 알차요", "피드백이 유용해요"],
+    },
     create: {
       id: "demo-review-1",
       programId: completed.id,
       userId: fans[0].id,
       revieweeId,
       rating: 4,
-      comment: "체계적이고 유익했어요.",
+      comment: "재료 선택 이유를 차근차근 설명해줘서 내 작업에도 바로 적용할 수 있었어요.",
       tags: ["구성이 알차요", "피드백이 유용해요"],
     },
   });
   await prisma.review.upsert({
     where: { id: "demo-review-2" },
-    update: {},
+    update: {
+      rating: 5,
+      comment: "온라인인데도 작업실에 같이 있는 느낌이 들었고, 피드백이 매우 구체적이었습니다.",
+      tags: ["소통이 좋아요", "다시 참여하고 싶어요"],
+    },
     create: {
       id: "demo-review-2",
       programId: completed.id,
       userId: fans[1].id,
       revieweeId,
       rating: 5,
-      comment: "정말 만족스럽습니다!",
+      comment: "온라인인데도 작업실에 같이 있는 느낌이 들었고, 피드백이 매우 구체적이었습니다.",
       tags: ["소통이 좋아요", "다시 참여하고 싶어요"],
     },
   });
+}
+
+// ──────────────────────────── 12-1. CreatorPayoutAccount ────────────────────────────
+
+async function upsertPayoutAccounts(profiles: Array<{ id: string }>) {
+  const defs = [
+    {
+      creatorProfileId: profiles[0]?.id,
+      businessType: CreatorPayoutBusinessType.PERSONAL,
+      bankName: "신한은행",
+      accountHolder: "이서윤",
+      accountNumberMasked: "110-***-**4821",
+      accountNumberLast4: "4821",
+      businessRegistrationNo: null,
+      verificationStatus: PayoutVerificationStatus.VERIFIED,
+      verifiedAt: new Date(),
+    },
+    {
+      creatorProfileId: profiles[1]?.id,
+      businessType: CreatorPayoutBusinessType.SOLE_PROPRIETOR,
+      bankName: "국민은행",
+      accountHolder: "강민재",
+      accountNumberMasked: "004-***-**9173",
+      accountNumberLast4: "9173",
+      businessRegistrationNo: "123-45-67890",
+      verificationStatus: PayoutVerificationStatus.PENDING_VERIFICATION,
+      verifiedAt: null,
+    },
+  ].filter((d): d is Exclude<typeof d, { creatorProfileId: undefined }> => Boolean(d.creatorProfileId));
+
+  await Promise.all(
+    defs.map((d) =>
+      prisma.creatorPayoutAccount.upsert({
+        where: { creatorProfileId: d.creatorProfileId },
+        update: {
+          businessType: d.businessType,
+          bankName: d.bankName,
+          accountHolder: d.accountHolder,
+          accountNumberMasked: d.accountNumberMasked,
+          accountNumberLast4: d.accountNumberLast4,
+          businessRegistrationNo: d.businessRegistrationNo,
+          verificationStatus: d.verificationStatus,
+          verifiedAt: d.verifiedAt,
+        },
+        create: d,
+      }),
+    ),
+  );
 }
 
 // ──────────────────────────── 13. Bookmark ────────────────────────────
