@@ -114,13 +114,13 @@ export function ApplicationList({ applications }: ApplicationListProps) {
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <h3 className="truncate text-base font-semibold text-text-default">
+              <div className="mb-2 flex items-start justify-between gap-3">
+                <h3 className="min-w-0 truncate text-base font-semibold text-text-default">
                   {application.user.name}
                 </h3>
                 <Badge
                   variant="secondary"
-                  className={cn("font-medium", statusStyles[application.status])}
+                  className={cn("ml-auto shrink-0 font-medium", statusStyles[application.status])}
                 >
                   {applicationStatusLabels[application.status] || application.status}
                 </Badge>
