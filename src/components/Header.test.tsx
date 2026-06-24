@@ -55,7 +55,8 @@ describe("Header GNB", () => {
     expectLink("프로그램", "/programs");
     expectLink("관심 작가", "/dashboard/fan/bookmarks");
     expectLink("내 멤버십", "/dashboard/fan/memberships");
-    expectLink("내 신청·결제", "/dashboard/fan/payments");
+    expectLink("내 신청", "/dashboard/fan/applications");
+    expectLink("결제", "/dashboard/fan/payments");
     expect(screen.queryByText("내 정보")).toBeNull();
     expect(screen.queryByText("내 활동")).toBeNull();
   });
