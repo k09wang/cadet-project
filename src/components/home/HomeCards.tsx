@@ -236,7 +236,10 @@ export function LockedPostCard({ post }: { post: HomeLockedPostItem }) {
         <p className="line-clamp-1 text-[13px] leading-5 text-text-muted">
           {post.creatorProfile.studioName}
         </p>
-        <p className="line-clamp-2 text-sm leading-5 text-text-default">{post.body}</p>
+        <div className="relative mt-1 overflow-hidden rounded-[14px] bg-surface-subtle/70 px-3 py-2">
+          <p className="line-clamp-2 blur-[5px] text-sm leading-5 text-text-default">{post.body}</p>
+          <div className="absolute inset-0 bg-white/28" aria-hidden="true" />
+        </div>
       </div>
       <div className="flex h-[62px] items-center justify-between bg-surface-subtle/70 px-[18px] py-3.5">
         <span className="text-sm font-bold text-text-default">{visibilityLabel}</span>

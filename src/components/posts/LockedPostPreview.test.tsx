@@ -24,6 +24,11 @@ describe("LockedPostPreview (FR-009, FR-011, AC-001, NFR-002)", () => {
     expect(screen.getByText(/유료 콘텐츠입니다/)).toBeTruthy();
   });
 
+  it("잠금 컨텐츠 본문 영역은 흐림 처리된 프리뷰를 렌더링한다", () => {
+    render(<LockedPostPreview title="잠금 포스트" creatorId="p-creator" />);
+    expect(screen.getByTestId("locked-post-blur")).toBeTruthy();
+  });
+
   it("body 텍스트가 렌더링 결과에 포함되지 않는다 (NFR-002 핵심 보안 테스트)", () => {
     const { container } = render(<LockedPostPreview title="잠금 포스트" creatorId="p-creator" />);
     // NFR-002: body는 LockedPostPreview에 전달되지 않으므로 HTML에 없어야 함

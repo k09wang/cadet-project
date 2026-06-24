@@ -23,17 +23,44 @@ export default async function PostPage({
     params,
     searchParams ?? Promise.resolve({} as { created?: string }),
   ]);
-  const [currentUser, post] = await Promise.all([
-    getCurrentUser(),
-    prisma.post.findUnique({
-      where: { id },
-      include: {
-        creatorProfile: {
-          select: { id: true, studioName: true, profileImageUrl: true },
+  const currentUser = await getCurrentUser();
+  const post = await prisma.post.findUnique({
+    where: { id },
+    include: {
+      creatorProfile: {
+        select: { id: true, studioName: true, profileImageUrl: true },
+      },
+      comments: {
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: {
+          author: {
+            select: {
+              name: true,
+            },
+          },
         },
       },
-    }),
-  ]);
+      _count: {
+        select: {
+          likes: true,
+          comments: true,
+        },
+      },
+      ...(currentUser
+        ? {
+            likes: {
+              where: {
+                userId: currentUser.id,
+              },
+              select: {
+                id: true,
+              },
+            },
+          }
+        : {}),
+    },
+  });
 
   if (!post) {
     notFound();
@@ -62,7 +89,29 @@ export default async function PostPage({
     return (
       <>
         {createdToast}
-        <PostDetail post={post} />
+        <PostDetail
+          post={{
+            ...post,
+            likesCount: post._count?.likes ?? 0,
+            viewerHasLiked: Array.isArray(post.likes) ? post.likes.length > 0 : false,
+            comments: (post.comments ?? []).map((comment) => ({
+              id: comment.id,
+              body: comment.body,
+              createdAt: comment.createdAt,
+              author: comment.author,
+              likesCount: 0,
+            })),
+          }}
+          currentUser={
+            currentUser
+              ? {
+                  id: currentUser.id,
+                  name: currentUser.name,
+                  role: currentUser.role,
+                }
+              : null
+          }
+        />
       </>
     );
   }
