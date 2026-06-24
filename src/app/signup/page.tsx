@@ -15,7 +15,7 @@ export default async function SignupPage({
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-surface-canvas px-4 py-10">
-      <section className="w-full max-w-[680px] space-y-5 rounded-lg border border-border-default bg-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+      <section className="w-full max-w-[680px] space-y-5 rounded-lg border border-border-default bg-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.05)] transition-[max-width] has-[input[name=role]]:max-w-[480px]">
         <div className="space-y-2 text-center">
           <h1 className="font-heading text-2xl font-bold leading-9 text-text-default">
             회원가입
