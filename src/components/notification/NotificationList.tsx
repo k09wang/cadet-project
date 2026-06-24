@@ -25,6 +25,18 @@ const iconMap: Record<string, React.ElementType> = {
 };
 
 /**
+ * 카테고리별 태그 색상 (Figma 28 알림 디자인 정합).
+ * 색은 디자인 요소이며 라벨/카테고리 분류는 코드 기준 그대로 사용한다.
+ */
+const categoryTagClass: Record<string, string> = {
+  membership: "bg-violet-50 text-violet-700",
+  program: "bg-blue-50 text-blue-700",
+  artwork: "bg-amber-50 text-amber-700",
+  settlement: "bg-emerald-50 text-emerald-700",
+  general: "bg-neutral-100 text-text-muted",
+};
+
+/**
  * 알림 목록 (SPEC-005 FR-014, AC-006).
  */
 interface NotificationListProps {
@@ -155,6 +167,7 @@ export function NotificationList({ notifications }: NotificationListProps) {
           const Icon = iconMap[notification.type] || Bell;
           const isUnread = !notification.readAt;
           const categoryLabel = notificationCategoryLabel(notification.type);
+          const category = notificationCategory(notification.type);
 
           return (
             <li
@@ -196,7 +209,12 @@ export function NotificationList({ notifications }: NotificationListProps) {
               </div>
 
               <div className="ml-auto flex shrink-0 items-center gap-2">
-                <span className="inline-flex rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-text-muted">
+                <span
+                  className={cn(
+                    "inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                    categoryTagClass[category] ?? categoryTagClass.general,
+                  )}
+                >
                   {categoryLabel}
                 </span>
                 {isUnread ? (
