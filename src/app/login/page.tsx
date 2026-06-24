@@ -16,7 +16,14 @@ export default async function LoginPage({
   const { callbackUrl } = await searchParams;
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-surface-canvas px-4 py-10">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-5 bg-surface-canvas px-4 py-10">
+      <Link
+        href="/"
+        aria-label="ArtBridge 홈으로"
+        className="font-heading text-2xl font-bold text-brand-primary transition-colors hover:text-brand-primary-pressed"
+      >
+        ArtBridge
+      </Link>
       <section className="w-full max-w-[360px] rounded-lg border border-border-default bg-white p-5 shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
         <div className="space-y-3.5">
           <div className="space-y-3">
