@@ -114,3 +114,51 @@ export async function listTopRatedCreators(limit = 3) {
     ];
   });
 }
+
+/** 홈 랜딩의 잠금 포스트 섹션용: 멤버/유료 공개 포스트를 최신순으로 조회한다. */
+export function listLockedPosts(limit = 3) {
+  return prisma.post.findMany({
+    where: {
+      status: "PUBLISHED",
+      visibility: { in: ["MEMBER_ONLY", "PAID"] },
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      title: true,
+      body: true,
+      visibility: true,
+      creatorProfile: {
+        select: {
+          id: true,
+          studioName: true,
+        },
+      },
+    },
+  });
+}
+
+/** 홈 랜딩의 인기 멤버십 섹션용: 활성 멤버 수가 많은 플랜을 우선 노출한다. */
+export function listPopularMembershipPlans(limit = 3) {
+  return prisma.membershipPlan.findMany({
+    orderBy: [{ memberships: { _count: "desc" } }, { createdAt: "desc" }],
+    take: limit,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      priceKrw: true,
+      creatorProfile: {
+        select: {
+          id: true,
+          studioName: true,
+        },
+      },
+      memberships: {
+        where: { status: "ACTIVE" },
+        select: { id: true },
+      },
+    },
+  });
+}
