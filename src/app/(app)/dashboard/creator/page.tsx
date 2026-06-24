@@ -5,7 +5,6 @@ import {
   CalendarPlus,
   Users,
   Star,
-  Wallet,
   MessagesSquare,
   ChevronRight,
   type LucideIcon,
@@ -95,7 +94,6 @@ export default async function CreatorDashboardPage() {
           { href: "/dashboard/creator/programs/new", label: "프로그램 만들기", Icon: CalendarPlus },
           { href: "/dashboard/creator/members", label: "멤버 관리", Icon: Users },
           { href: "/dashboard/creator/memberships", label: "멤버십 관리", Icon: Star },
-          { href: "/dashboard/creator/settlements", label: "정산 관리", Icon: Wallet },
           ...(profile
             ? [
                 {

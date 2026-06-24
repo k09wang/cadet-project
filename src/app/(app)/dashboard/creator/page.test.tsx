@@ -83,4 +83,10 @@ describe("/dashboard/creator (AC-004)", () => {
     const link = screen.getByRole("link", { name: /내 커뮤니티/ });
     expect(link).toHaveAttribute("href", "/creators/p-1?tab=community");
   });
+
+  it("does not render settlement shortcut because settlement is handled by the GNB", async () => {
+    const ui = await CreatorDashboardPage();
+    render(ui);
+    expect(screen.queryByRole("link", { name: /정산 관리/ })).toBeNull();
+  });
 });
