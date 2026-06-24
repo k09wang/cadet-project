@@ -33,6 +33,15 @@ const FEE_RATE = 0.1; // 10% platform fee (tech.md §8)
 const DEMO_PASSWORD = "demo1234!";
 const DEMO_PASSWORD_HASH = bcrypt.hashSync(DEMO_PASSWORD, 10);
 const ASSET_BASE = "/demo-assets";
+type CreatorDemoKey = "seo-yoon" | "min-jae" | "yu-ra" | "na-rin" | "i-jun" | "ga-eun";
+const DEMO_CREATOR_KEYS: CreatorDemoKey[] = [
+  "seo-yoon",
+  "min-jae",
+  "yu-ra",
+  "na-rin",
+  "i-jun",
+  "ga-eun",
+];
 
 async function main() {
   console.log("→ Seeding ArtBridge demo data…");
@@ -59,6 +68,16 @@ async function main() {
   await upsertPostsFor(profile2.id, "demo2-post-1", "demo2-post-2");
   await upsertCreatorWorks(profile2.id, "min-jae");
   const artworks2 = await upsertArtworks(profile2.id, "min-jae");
+  const extraArtworks: Array<{ id: string; priceKrw: number }> = [];
+  for (let i = 2; i < profiles.length; i += 1) {
+    const key = DEMO_CREATOR_KEYS[i];
+    if (!key) continue;
+    await upsertPlansForCreator(profiles[i].id, key);
+    await upsertProgramsForCreator(profiles[i].id, key);
+    await upsertPostsForCreator(profiles[i].id, key);
+    await upsertCreatorWorks(profiles[i].id, key);
+    extraArtworks.push(...(await upsertArtworks(profiles[i].id, key)));
+  }
   await upsertPayoutAccounts(profiles);
 
   const membership = await upsertMembership(fans[0].id, plans[0].id);
@@ -67,7 +86,7 @@ async function main() {
 
   const payments = await upsertPayments(membership.id, contract.id, fans[0].id);
   await upsertSettlements(payments);
-  await upsertArtworkOrders(fans, [...artworks, ...artworks2]);
+  await upsertArtworkOrders(fans, [...artworks, ...artworks2, ...extraArtworks]);
 
   // SPEC-009 NFR-007: PAID 포스트 단건 구매 시연 — fans[1]은 demo-post-3을 구매 완료,
   // fans[0]은 미구매 상태로 두어 잠금/열림 두 화면을 바로 시연한다.
@@ -104,6 +123,10 @@ async function upsertCreators() {
   const defs = [
     { email: "creator@artbridge.demo", name: "이서윤" },
     { email: "creator2@artbridge.demo", name: "강민재" },
+    { email: "creator3@artbridge.demo", name: "한유라" },
+    { email: "creator4@artbridge.demo", name: "최나린" },
+    { email: "creator5@artbridge.demo", name: "백이준" },
+    { email: "creator6@artbridge.demo", name: "문가은" },
   ];
   return Promise.all(
     defs.map((d) =>
@@ -163,6 +186,42 @@ const CREATOR_PROFILE_DEFS = [
     profileImageUrl: `${ASSET_BASE}/min-jae-profile.jpg`,
     instagramUrl: "https://instagram.com/artbridge_demo2",
     websiteUrl: "https://example.com/creator2",
+  },
+  {
+    studioName: "유라 포토룸",
+    bio: "전시장, 사람의 움직임, 빛이 남긴 흔적을 사진과 아카이브 설치로 기록합니다.",
+    category: "사진 · 전시",
+    coverImageUrl: `${ASSET_BASE}/photo-gallery-walk-cover.jpg`,
+    profileImageUrl: `${ASSET_BASE}/photo-gallery-walk-portrait.jpg`,
+    instagramUrl: "https://instagram.com/artbridge_demo3",
+    websiteUrl: "https://example.com/creator3",
+  },
+  {
+    studioName: "나린 페인팅 랩",
+    bio: "도시의 밤, 건축의 면, 색이 부딪히는 순간을 큰 캔버스 위에 재구성합니다.",
+    category: "회화",
+    coverImageUrl: `${ASSET_BASE}/painting-prism-cover.jpg`,
+    profileImageUrl: `${ASSET_BASE}/painting-dusk-city-portrait.jpg`,
+    instagramUrl: "https://instagram.com/artbridge_demo4",
+    websiteUrl: "https://example.com/creator4",
+  },
+  {
+    studioName: "이준 오브젝트 하우스",
+    bio: "무광 도자, 목재 선반, 생활 오브제를 조합해 조용한 수집 장면을 만듭니다.",
+    category: "도자 · 오브제",
+    coverImageUrl: `${ASSET_BASE}/ceramic-stairs-cover.jpg`,
+    profileImageUrl: `${ASSET_BASE}/ceramic-blue-vases-portrait.jpg`,
+    instagramUrl: "https://instagram.com/artbridge_demo5",
+    websiteUrl: "https://example.com/creator5",
+  },
+  {
+    studioName: "가은 전시 그래픽 스튜디오",
+    bio: "전시 포스터, 리서치 보드, 인쇄물과 공간 이미지를 연결하는 그래픽 작업을 합니다.",
+    category: "그래픽 · 설치",
+    coverImageUrl: `${ASSET_BASE}/exhibition-board-walk-cover.jpg`,
+    profileImageUrl: `${ASSET_BASE}/exhibition-board-walk-portrait.jpg`,
+    instagramUrl: "https://instagram.com/artbridge_demo6",
+    websiteUrl: "https://example.com/creator6",
   },
 ];
 
@@ -320,31 +379,8 @@ async function upsertPosts(creatorProfileId: string) {
 
 // ──────────────────────────── 5-1. CreatorWork / Artwork ────────────────────────────
 
-async function upsertCreatorWorks(creatorProfileId: string, key: "seo-yoon" | "min-jae") {
-  const defs =
-    key === "seo-yoon"
-      ? [
-          {
-            id: "demo-work-seo-yoon-1",
-            title: "라이트 룸 리서치",
-            kind: "전시",
-            description: "반투명 패널과 회화 레이어를 한 공간에 배치해 관람 동선에 따라 색이 변하는 설치 작업입니다.",
-            imageUrl: `${ASSET_BASE}/work-light-room.jpg`,
-            startedAt: new Date("2026-03-01"),
-            endedAt: new Date("2026-05-18"),
-          },
-        ]
-      : [
-          {
-            id: "demo-work-min-jae-1",
-            title: "세라믹 테이블 오브제",
-            kind: "프로젝트",
-            description: "손으로 빚은 작은 조형을 테이블 위에 놓이는 일상 오브제로 확장한 시리즈입니다.",
-            imageUrl: `${ASSET_BASE}/work-ceramic-table.jpg`,
-            startedAt: new Date("2026-02-10"),
-            endedAt: new Date("2026-04-30"),
-          },
-        ];
+async function upsertCreatorWorks(creatorProfileId: string, key: CreatorDemoKey) {
+  const defs = CREATOR_WORK_DEFS[key] ?? [];
 
   return Promise.all(
     defs.map((d) =>
@@ -367,67 +403,8 @@ async function upsertCreatorWorks(creatorProfileId: string, key: "seo-yoon" | "m
   );
 }
 
-async function upsertArtworks(creatorProfileId: string, key: "seo-yoon" | "min-jae") {
-  const defs =
-    key === "seo-yoon"
-      ? [
-          {
-            id: "demo-artwork-1",
-            title: "오후의 잔상 01",
-            description: "청록과 흰빛을 얇게 겹친 소형 회화 오브제입니다.",
-            imageUrl: `${ASSET_BASE}/artwork-01.jpg`,
-            priceKrw: 180000,
-            stock: 2,
-            status: ArtworkStatus.PUBLISHED,
-          },
-          {
-            id: "demo-artwork-2",
-            title: "투명한 창",
-            description: "반사 필름과 안료 레이어가 보는 각도에 따라 달라지는 작품입니다.",
-            imageUrl: `${ASSET_BASE}/artwork-03.jpg`,
-            priceKrw: 260000,
-            stock: 1,
-            status: ArtworkStatus.PUBLISHED,
-          },
-          {
-            id: "demo-artwork-3",
-            title: "작은 빛의 지도",
-            description: "컬렉터 프리뷰에서 먼저 공개했던 신작 에디션입니다.",
-            imageUrl: `${ASSET_BASE}/artwork-04.jpg`,
-            priceKrw: 145000,
-            stock: 0,
-            status: ArtworkStatus.SOLD,
-          },
-        ]
-      : [
-          {
-            id: "demo-artwork-4",
-            title: "흙의 곡선",
-            description: "유약의 흐름과 손자국을 그대로 남긴 세라믹 조각입니다.",
-            imageUrl: `${ASSET_BASE}/artwork-02.jpg`,
-            priceKrw: 220000,
-            stock: 1,
-            status: ArtworkStatus.PUBLISHED,
-          },
-          {
-            id: "demo-artwork-5",
-            title: "테이블 스톤",
-            description: "책상 위에 놓는 작은 조형 오브제 시리즈입니다.",
-            imageUrl: `${ASSET_BASE}/artwork-05.jpg`,
-            priceKrw: 98000,
-            stock: 3,
-            status: ArtworkStatus.PUBLISHED,
-          },
-          {
-            id: "demo-artwork-6",
-            title: "분홍 유약 테스트 피스",
-            description: "멤버 전용 포스트에서 공개했던 유약 테스트 결과물입니다.",
-            imageUrl: `${ASSET_BASE}/artwork-06.jpg`,
-            priceKrw: 125000,
-            stock: 1,
-            status: ArtworkStatus.PUBLISHED,
-          },
-        ];
+async function upsertArtworks(creatorProfileId: string, key: CreatorDemoKey) {
+  const defs = ARTWORK_DEFS[key] ?? [];
 
   return Promise.all(
     defs.map((d) =>
@@ -449,6 +426,283 @@ async function upsertArtworks(creatorProfileId: string, key: "seo-yoon" | "min-j
     ),
   );
 }
+
+const CREATOR_WORK_DEFS: Record<
+  CreatorDemoKey,
+  Array<{
+    id: string;
+    title: string;
+    kind: string;
+    description: string;
+    imageUrl: string;
+    startedAt: Date;
+    endedAt: Date;
+  }>
+> = {
+  "seo-yoon": [
+    {
+      id: "demo-work-seo-yoon-1",
+      title: "라이트 룸 리서치",
+      kind: "전시",
+      description: "반투명 패널과 회화 레이어를 한 공간에 배치해 관람 동선에 따라 색이 변하는 설치 작업입니다.",
+      imageUrl: `${ASSET_BASE}/work-light-room.jpg`,
+      startedAt: new Date("2026-03-01"),
+      endedAt: new Date("2026-05-18"),
+    },
+  ],
+  "min-jae": [
+    {
+      id: "demo-work-min-jae-1",
+      title: "세라믹 테이블 오브제",
+      kind: "프로젝트",
+      description: "손으로 빚은 작은 조형을 테이블 위에 놓이는 일상 오브제로 확장한 시리즈입니다.",
+      imageUrl: `${ASSET_BASE}/work-ceramic-table.jpg`,
+      startedAt: new Date("2026-02-10"),
+      endedAt: new Date("2026-04-30"),
+    },
+    {
+      id: "demo-work-min-jae-2",
+      title: "계단 위의 무광 화병",
+      kind: "촬영",
+      description: "무광 흙색과 검은 유약의 대비를 자연광 아래에서 기록한 오브제 촬영입니다.",
+      imageUrl: `${ASSET_BASE}/ceramic-stairs.jpg`,
+      startedAt: new Date("2026-05-02"),
+      endedAt: new Date("2026-05-20"),
+    },
+  ],
+  "yu-ra": [
+    {
+      id: "demo-work-yu-ra-1",
+      title: "화이트 월 포토 아카이브",
+      kind: "사진전",
+      description: "관람객의 움직임과 벽면 사진의 간격을 장노출 방식으로 기록한 전시 프로젝트입니다.",
+      imageUrl: `${ASSET_BASE}/photo-gallery-walk.jpg`,
+      startedAt: new Date("2026-01-15"),
+      endedAt: new Date("2026-03-01"),
+    },
+  ],
+  "na-rin": [
+    {
+      id: "demo-work-na-rin-1",
+      title: "프리즘 시티 캔버스",
+      kind: "개인전",
+      description: "도시의 면과 빛을 큰 색면으로 분해한 회화 연작 전시입니다.",
+      imageUrl: `${ASSET_BASE}/painting-prism.jpg`,
+      startedAt: new Date("2026-04-01"),
+      endedAt: new Date("2026-06-01"),
+    },
+  ],
+  "i-jun": [
+    {
+      id: "demo-work-i-jun-1",
+      title: "블루 글레이즈 스터디",
+      kind: "작업실 기록",
+      description: "청록 유약의 흐름과 유광 표면을 비교하기 위해 제작한 작은 화병 연구입니다.",
+      imageUrl: `${ASSET_BASE}/ceramic-blue-vases.jpg`,
+      startedAt: new Date("2026-02-18"),
+      endedAt: new Date("2026-04-12"),
+    },
+  ],
+  "ga-eun": [
+    {
+      id: "demo-work-ga-eun-1",
+      title: "리서치 보드와 전시 그래픽",
+      kind: "설치",
+      description: "전시 리서치 이미지, 포스터, 컬러 샘플을 하나의 벽면 그래픽으로 구성했습니다.",
+      imageUrl: `${ASSET_BASE}/exhibition-board-walk.jpg`,
+      startedAt: new Date("2026-03-20"),
+      endedAt: new Date("2026-05-10"),
+    },
+  ],
+};
+
+const ARTWORK_DEFS: Record<
+  CreatorDemoKey,
+  Array<{
+    id: string;
+    title: string;
+    description: string;
+    imageUrl: string;
+    priceKrw: number;
+    stock: number;
+    status: ArtworkStatus;
+  }>
+> = {
+  "seo-yoon": [
+    {
+      id: "demo-artwork-1",
+      title: "오후의 잔상 01",
+      description: "청록과 흰빛을 얇게 겹친 소형 회화 오브제입니다.",
+      imageUrl: `${ASSET_BASE}/artwork-01.jpg`,
+      priceKrw: 180000,
+      stock: 2,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-2",
+      title: "투명한 창",
+      description: "반사 필름과 안료 레이어가 보는 각도에 따라 달라지는 작품입니다.",
+      imageUrl: `${ASSET_BASE}/artwork-03.jpg`,
+      priceKrw: 260000,
+      stock: 1,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-3",
+      title: "작은 빛의 지도",
+      description: "컬렉터 프리뷰에서 먼저 공개했던 신작 에디션입니다.",
+      imageUrl: `${ASSET_BASE}/artwork-04.jpg`,
+      priceKrw: 145000,
+      stock: 0,
+      status: ArtworkStatus.SOLD,
+    },
+  ],
+  "min-jae": [
+    {
+      id: "demo-artwork-4",
+      title: "흙의 곡선",
+      description: "유약의 흐름과 손자국을 그대로 남긴 세라믹 조각입니다.",
+      imageUrl: `${ASSET_BASE}/artwork-02.jpg`,
+      priceKrw: 220000,
+      stock: 1,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-5",
+      title: "테이블 스톤",
+      description: "책상 위에 놓는 작은 조형 오브제 시리즈입니다.",
+      imageUrl: `${ASSET_BASE}/artwork-05.jpg`,
+      priceKrw: 98000,
+      stock: 3,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-6",
+      title: "분홍 유약 테스트 피스",
+      description: "멤버 전용 포스트에서 공개했던 유약 테스트 결과물입니다.",
+      imageUrl: `${ASSET_BASE}/artwork-06.jpg`,
+      priceKrw: 125000,
+      stock: 1,
+      status: ArtworkStatus.PUBLISHED,
+    },
+  ],
+  "yu-ra": [
+    {
+      id: "demo-artwork-7",
+      title: "화이트 월, 지나가는 사람",
+      description: "전시장 벽면과 관람객의 흐릿한 움직임을 담은 사진 프린트입니다.",
+      imageUrl: `${ASSET_BASE}/photo-gallery-walk.jpg`,
+      priceKrw: 320000,
+      stock: 2,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-8",
+      title: "아카이브 보드 02",
+      description: "리서치 이미지와 색면 포스터가 겹친 전시 설치 사진입니다.",
+      imageUrl: `${ASSET_BASE}/exhibition-board-walk.jpg`,
+      priceKrw: 240000,
+      stock: 2,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-9",
+      title: "갤러리 라인",
+      description: "화이트 큐브 공간의 벽면, 액자, 걷는 사람의 시간을 담은 에디션입니다.",
+      imageUrl: `${ASSET_BASE}/photo-gallery-walk-cover.jpg`,
+      priceKrw: 190000,
+      stock: 4,
+      status: ArtworkStatus.PUBLISHED,
+    },
+  ],
+  "na-rin": [
+    {
+      id: "demo-artwork-10",
+      title: "도시의 해질녘",
+      description: "푸른 빌딩과 노란 창빛이 겹치는 시간을 색면으로 구성한 회화입니다.",
+      imageUrl: `${ASSET_BASE}/painting-dusk-city.jpg`,
+      priceKrw: 410000,
+      stock: 1,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-11",
+      title: "프리즘 거리",
+      description: "사선과 투명한 색면으로 도시의 진입로를 재구성한 캔버스입니다.",
+      imageUrl: `${ASSET_BASE}/painting-prism.jpg`,
+      priceKrw: 520000,
+      stock: 1,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-12",
+      title: "창문 아래의 오렌지",
+      description: "저녁 창빛과 어두운 골목의 대비를 작은 캔버스로 옮겼습니다.",
+      imageUrl: `${ASSET_BASE}/painting-dusk-city-portrait.jpg`,
+      priceKrw: 280000,
+      stock: 2,
+      status: ArtworkStatus.PUBLISHED,
+    },
+  ],
+  "i-jun": [
+    {
+      id: "demo-artwork-13",
+      title: "무광 화병 세트",
+      description: "계단 위 자연광에서 촬영한 무광 도자 화병 세트입니다.",
+      imageUrl: `${ASSET_BASE}/ceramic-stairs.jpg`,
+      priceKrw: 360000,
+      stock: 1,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-14",
+      title: "블루 글레이즈 듀오",
+      description: "청록 유약이 흘러내리는 작은 화병 두 점 구성입니다.",
+      imageUrl: `${ASSET_BASE}/ceramic-blue-vases.jpg`,
+      priceKrw: 175000,
+      stock: 2,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-15",
+      title: "검은 실린더 베이스",
+      description: "무광 흑토와 얇은 입구 형태를 강조한 단독 오브제입니다.",
+      imageUrl: `${ASSET_BASE}/ceramic-stairs-portrait.jpg`,
+      priceKrw: 132000,
+      stock: 1,
+      status: ArtworkStatus.PUBLISHED,
+    },
+  ],
+  "ga-eun": [
+    {
+      id: "demo-artwork-16",
+      title: "오렌지 포스터 월",
+      description: "전시 리서치 벽면에서 분리한 그래픽 포스터 프린트입니다.",
+      imageUrl: `${ASSET_BASE}/exhibition-board-walk.jpg`,
+      priceKrw: 88000,
+      stock: 8,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-17",
+      title: "리서치 카드 세트",
+      description: "사진, 컬러 샘플, 짧은 메모를 엮은 한정판 인쇄물 세트입니다.",
+      imageUrl: `${ASSET_BASE}/exhibition-board-walk-cover.jpg`,
+      priceKrw: 64000,
+      stock: 12,
+      status: ArtworkStatus.PUBLISHED,
+    },
+    {
+      id: "demo-artwork-18",
+      title: "화이트 큐브 스냅",
+      description: "전시장 동선을 그래픽 레퍼런스로 기록한 사진 기반 포스터입니다.",
+      imageUrl: `${ASSET_BASE}/photo-gallery-walk-portrait.jpg`,
+      priceKrw: 72000,
+      stock: 6,
+      status: ArtworkStatus.PUBLISHED,
+    },
+  ],
+};
 
 // ──────────────── SPEC-002 NFR-001: creator2 전용 plans/programs/posts ────────────────
 
@@ -539,6 +793,227 @@ async function upsertPostsFor(
     },
   });
 }
+
+async function upsertPlansForCreator(creatorProfileId: string, key: CreatorDemoKey) {
+  const def = CREATOR_PLAN_DEFS[key];
+  if (!def) return [];
+  return [
+    await prisma.membershipPlan.upsert({
+      where: { id: def.id },
+      update: {
+        title: def.title,
+        description: def.description,
+        priceKrw: def.priceKrw,
+      },
+      create: {
+        ...def,
+        creatorProfileId,
+      },
+    }),
+  ];
+}
+
+async function upsertProgramsForCreator(creatorProfileId: string, key: CreatorDemoKey) {
+  const def = CREATOR_PROGRAM_DEFS[key];
+  if (!def) return [];
+  return [
+    await prisma.program.upsert({
+      where: { id: def.id },
+      update: {
+        title: def.title,
+        description: def.description,
+        category: def.category,
+        priceKrw: def.priceKrw,
+        maxParticipants: def.maxParticipants,
+        status: ProgramStatus.RECRUITING,
+      },
+      create: {
+        id: def.id,
+        title: def.title,
+        description: def.description,
+        category: def.category,
+        priceKrw: def.priceKrw,
+        maxParticipants: def.maxParticipants,
+        creatorProfileId,
+        recruitDeadline: new Date(Date.now() + def.deadlineDays * 24 * 60 * 60 * 1000),
+        status: ProgramStatus.RECRUITING,
+      },
+    }),
+  ];
+}
+
+async function upsertPostsForCreator(creatorProfileId: string, key: CreatorDemoKey) {
+  const defs = CREATOR_POST_DEFS[key] ?? [];
+  await Promise.all(
+    defs.map((d) =>
+      prisma.post.upsert({
+        where: { id: d.id },
+        update: {
+          title: d.title,
+          body: d.body,
+          visibility: d.visibility,
+          priceKrw: d.priceKrw,
+        },
+        create: {
+          ...d,
+          creatorProfileId,
+        },
+      }),
+    ),
+  );
+}
+
+const CREATOR_PLAN_DEFS: Partial<Record<CreatorDemoKey, {
+  id: string;
+  title: string;
+  description: string;
+  priceKrw: number;
+}>> = {
+  "yu-ra": {
+    id: "demo3-plan-1",
+    title: "월간 포토 아카이브",
+    description: "전시장 촬영 노트, 프린트 셀렉션, 다음 촬영 장소 후보를 먼저 받아봅니다.",
+    priceKrw: 11000,
+  },
+  "na-rin": {
+    id: "demo4-plan-1",
+    title: "캔버스 컬러 로그",
+    description: "색면 스터디, 팔레트 조합, 완성 전 캔버스 과정을 멤버 전용으로 공유합니다.",
+    priceKrw: 13000,
+  },
+  "i-jun": {
+    id: "demo5-plan-1",
+    title: "오브제 컬렉터 노트",
+    description: "도자 입고 일정, 유약 테스트, 소형 오브제 프리오더 소식을 먼저 확인합니다.",
+    priceKrw: 10000,
+  },
+  "ga-eun": {
+    id: "demo6-plan-1",
+    title: "전시 그래픽 리서치",
+    description: "포스터 시안, 리서치 보드, 인쇄 샘플 제작 과정을 받아봅니다.",
+    priceKrw: 8000,
+  },
+};
+
+const CREATOR_PROGRAM_DEFS: Partial<Record<CreatorDemoKey, {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  priceKrw: number;
+  maxParticipants: number;
+  deadlineDays: number;
+}>> = {
+  "yu-ra": {
+    id: "demo3-program-1",
+    title: "전시장 사진 읽기와 시퀀싱",
+    description: "전시장 사진을 고르고 순서를 짜서 작은 포토북 흐름으로 구성하는 클래스입니다.",
+    category: "사진 클래스",
+    priceKrw: 42000,
+    maxParticipants: 12,
+    deadlineDays: 24,
+  },
+  "na-rin": {
+    id: "demo4-program-1",
+    title: "도시 색면 페인팅 워크숍",
+    description: "사진 한 장에서 색면을 추출해 추상 회화 스케치로 옮기는 3주 워크숍입니다.",
+    category: "회화 워크숍",
+    priceKrw: 58000,
+    maxParticipants: 9,
+    deadlineDays: 18,
+  },
+  "i-jun": {
+    id: "demo5-program-1",
+    title: "작은 화병 형태 만들기",
+    description: "기본 성형과 표면 질감 정리를 통해 손바닥 크기의 화병을 제작합니다.",
+    category: "도예 워크숍",
+    priceKrw: 52000,
+    maxParticipants: 7,
+    deadlineDays: 20,
+  },
+  "ga-eun": {
+    id: "demo6-program-1",
+    title: "전시 포스터 무드보드 만들기",
+    description: "이미지, 타이포, 컬러 샘플을 조합해 전시 포스터 방향을 잡는 온라인 클래스입니다.",
+    category: "그래픽 클래스",
+    priceKrw: 33000,
+    maxParticipants: 14,
+    deadlineDays: 28,
+  },
+};
+
+const CREATOR_POST_DEFS: Partial<Record<CreatorDemoKey, Array<{
+  id: string;
+  title: string;
+  body: string;
+  visibility: PostVisibility;
+  priceKrw: number | null;
+}>>> = {
+  "yu-ra": [
+    {
+      id: "demo3-post-1",
+      title: "전시장 사진을 고르는 기준",
+      body: "관람객의 움직임, 벽면의 여백, 액자 간격이 함께 보이는 컷을 우선으로 고릅니다.",
+      visibility: PostVisibility.PUBLIC,
+      priceKrw: null,
+    },
+    {
+      id: "demo3-post-2",
+      title: "멤버 프린트 후보 6장",
+      body: "다음 에디션으로 제작할 사진 후보와 인화지 테스트 결과를 공유합니다.",
+      visibility: PostVisibility.MEMBER_ONLY,
+      priceKrw: null,
+    },
+  ],
+  "na-rin": [
+    {
+      id: "demo4-post-1",
+      title: "프리즘 회화의 첫 색면",
+      body: "큰 면을 먼저 잡고 작은 창빛을 나중에 얹는 방식으로 도시의 깊이를 만듭니다.",
+      visibility: PostVisibility.PUBLIC,
+      priceKrw: null,
+    },
+    {
+      id: "demo4-post-2",
+      title: "유료 노트: 캔버스 레이어 순서",
+      body: "밑색, 중간 투명층, 마지막 강조색을 쌓는 순서를 실제 작업 사진과 함께 정리했습니다.",
+      visibility: PostVisibility.PAID,
+      priceKrw: 6000,
+    },
+  ],
+  "i-jun": [
+    {
+      id: "demo5-post-1",
+      title: "무광 화병의 표면 질감",
+      body: "사포질과 건조 시간에 따라 같은 흙도 완전히 다른 표정을 가집니다.",
+      visibility: PostVisibility.PUBLIC,
+      priceKrw: null,
+    },
+    {
+      id: "demo5-post-2",
+      title: "멤버 전용: 유약 실패 기록",
+      body: "청록 유약이 과하게 흘렀던 배치와 다음 소성에서 조정할 포인트를 남깁니다.",
+      visibility: PostVisibility.MEMBER_ONLY,
+      priceKrw: null,
+    },
+  ],
+  "ga-eun": [
+    {
+      id: "demo6-post-1",
+      title: "전시 보드에 이미지를 배열하는 법",
+      body: "크기가 다른 이미지와 컬러 샘플을 한 벽면에서 읽히게 만드는 간격 기준을 공유합니다.",
+      visibility: PostVisibility.PUBLIC,
+      priceKrw: null,
+    },
+    {
+      id: "demo6-post-2",
+      title: "리서치 카드 인쇄 전 체크리스트",
+      body: "종이 두께, 여백, 작은 캡션의 가독성을 확인하는 프린트 체크리스트입니다.",
+      visibility: PostVisibility.MEMBER_ONLY,
+      priceKrw: null,
+    },
+  ],
+};
 
 // ──────────────────────────── 6. Membership ────────────────────────────
 
@@ -1020,6 +1495,50 @@ async function upsertPayoutAccounts(profiles: Array<{ id: string }>) {
       businessRegistrationNo: "123-45-67890",
       verificationStatus: PayoutVerificationStatus.PENDING_VERIFICATION,
       verifiedAt: null,
+    },
+    {
+      creatorProfileId: profiles[2]?.id,
+      businessType: CreatorPayoutBusinessType.PERSONAL,
+      bankName: "하나은행",
+      accountHolder: "한유라",
+      accountNumberMasked: "391-***-**2044",
+      accountNumberLast4: "2044",
+      businessRegistrationNo: null,
+      verificationStatus: PayoutVerificationStatus.VERIFIED,
+      verifiedAt: new Date(),
+    },
+    {
+      creatorProfileId: profiles[3]?.id,
+      businessType: CreatorPayoutBusinessType.PERSONAL,
+      bankName: "우리은행",
+      accountHolder: "최나린",
+      accountNumberMasked: "1002-***-**7710",
+      accountNumberLast4: "7710",
+      businessRegistrationNo: null,
+      verificationStatus: PayoutVerificationStatus.VERIFIED,
+      verifiedAt: new Date(),
+    },
+    {
+      creatorProfileId: profiles[4]?.id,
+      businessType: CreatorPayoutBusinessType.SOLE_PROPRIETOR,
+      bankName: "토스뱅크",
+      accountHolder: "백이준",
+      accountNumberMasked: "1908-***-**5582",
+      accountNumberLast4: "5582",
+      businessRegistrationNo: "234-56-78901",
+      verificationStatus: PayoutVerificationStatus.PENDING_VERIFICATION,
+      verifiedAt: null,
+    },
+    {
+      creatorProfileId: profiles[5]?.id,
+      businessType: CreatorPayoutBusinessType.PERSONAL,
+      bankName: "카카오뱅크",
+      accountHolder: "문가은",
+      accountNumberMasked: "3333-***-**6407",
+      accountNumberLast4: "6407",
+      businessRegistrationNo: null,
+      verificationStatus: PayoutVerificationStatus.VERIFIED,
+      verifiedAt: new Date(),
     },
   ].filter((d): d is Exclude<typeof d, { creatorProfileId: undefined }> => Boolean(d.creatorProfileId));
 
