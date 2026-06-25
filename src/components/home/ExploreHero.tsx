@@ -11,13 +11,15 @@ export interface ExploreHeroProps {
  */
 export function ExploreHero({ defaultQuery }: ExploreHeroProps) {
   return (
-    <section className="overflow-hidden rounded-[var(--radius-panel)] bg-brand-primary-hover px-5 py-10 text-white sm:px-10 sm:py-12 lg:min-h-[280px] lg:px-[60px]">
-      <div className="flex max-w-2xl flex-col gap-5">
+    <section className="relative overflow-hidden rounded-[var(--radius-panel)] bg-[linear-gradient(105deg,#f7f4ff_0%,#f7f4ff_50%,#f0eaff_51%,#5948e8_68%,#d875ec_100%)] px-5 py-10 text-text-default sm:px-10 sm:py-12 lg:min-h-[280px] lg:px-[60px]">
+      <div className="pointer-events-none absolute -bottom-16 right-[34%] size-48 rounded-full bg-[#d8ccff]/70" />
+      <div className="pointer-events-none absolute right-4 top-4 size-24 rounded-full bg-white/25 blur-2xl" />
+      <div className="relative flex max-w-2xl flex-col gap-5">
         <div className="space-y-3">
-          <h1 className="font-heading text-[28px] font-bold leading-9 sm:text-[32px] sm:leading-10">
+          <h1 className="font-heading text-[28px] font-bold leading-9 sm:text-[36px] sm:leading-[44px]">
             나만의 크리에이터를 찾아보세요
           </h1>
-          <p className="text-base leading-6 text-[#e0f5f5]">
+          <p className="text-base leading-6 text-text-muted">
             다양한 분야의 크리에이터와 함께하는 특별한 경험
           </p>
         </div>
@@ -36,7 +38,7 @@ export function ExploreHero({ defaultQuery }: ExploreHeroProps) {
             type="submit"
             className={cn(
               buttonVariants({ variant: "secondary", size: "lg" }),
-              "bg-white px-5 text-brand-primary-hover hover:bg-white/90"
+              "bg-white px-5 text-brand-primary-pressed hover:bg-white/90"
             )}
           >
             검색

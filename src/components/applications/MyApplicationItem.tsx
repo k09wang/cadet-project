@@ -17,6 +17,8 @@ const STEPS = ["신청", "결제", "참여 확정", "진행", "완료"] as const
 export interface MyApplicationItemData {
   id: string;
   status: string;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
   deliveryRequestedAt?: Date | string | null;
   completionApprovedAt?: Date | string | null;
   program: {
@@ -26,7 +28,11 @@ export interface MyApplicationItemData {
     /** 본인이 작성한 리뷰(있으면 작성 완료). */
     reviews?: { id: string }[];
   };
-  payment?: { status: string } | null;
+  payment?: {
+    status: string;
+    createdAt?: Date | string | null;
+    updatedAt?: Date | string | null;
+  } | null;
 }
 
 // 신청 상태 + 프로그램 결제 진행 → 현재 도달 스텝 인덱스(0~4).
@@ -55,6 +61,37 @@ const statusPill: Record<string, { label: string; variant: BadgeProps["variant"]
   PAYMENT_FAILED: { label: "결제 실패", variant: "danger" },
 };
 
+function formatStepDate(value?: Date | string | null) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "numeric",
+    day: "numeric",
+  }).format(date);
+}
+
+function resolveStepDates(application: MyApplicationItemData) {
+  const paidAt =
+    application.payment?.status === "PAID" || application.payment?.status === "RELEASED"
+      ? application.payment.createdAt ?? application.payment.updatedAt
+      : null;
+  const confirmedAt =
+    application.status === "ACCEPTED" ||
+    application.payment?.status === "PAID" ||
+    application.payment?.status === "RELEASED"
+      ? paidAt ?? application.updatedAt
+      : null;
+
+  return [
+    application.createdAt,
+    application.payment?.createdAt,
+    confirmedAt,
+    application.deliveryRequestedAt,
+    application.completionApprovedAt,
+  ].map(formatStepDate);
+}
+
 export function MyApplicationItem({
   application,
   actionSlot,
@@ -68,6 +105,7 @@ export function MyApplicationItem({
   const completed = !!application.completionApprovedAt;
   const pill = statusPill[application.status] ?? statusPill.PENDING;
   const step = resolveStep(application);
+  const stepDates = resolveStepDates(application);
   const nextActionLabel = step <= 1 ? "결제 진행하기" : "참여 상태 보기";
 
   return (
@@ -103,46 +141,64 @@ export function MyApplicationItem({
           아쉽게도 이번 신청은 받아들여지지 않았어요.
         </p>
       ) : (
-        <div className="flex min-w-0 flex-col gap-2 sm:ml-auto">
-          <div className="flex items-center overflow-hidden">
-            {STEPS.map((label, i) => {
-              const reached = i <= step;
-              const current = i === step;
-              return (
-                <div key={label} className="flex items-center">
-                  <div
-                    className={cn(
-                      "size-3 shrink-0 rounded-full border-2 transition-colors",
-                      reached
-                        ? "border-brand-primary bg-brand-primary"
-                        : "border-neutral-300 bg-white",
-                      current && "ring-2 ring-brand-primary/30",
-                    )}
-                  />
-                  {i < STEPS.length - 1 && (
+        <div className="flex min-w-0 flex-col gap-3 sm:ml-auto">
+          <div className="w-full max-w-[300px]">
+            <div className="grid grid-cols-5">
+              {stepDates.map((date, i) => (
+                <span
+                  key={`${STEPS[i]}-date`}
+                  className={cn(
+                    "min-h-[14px] px-0.5 text-center text-[10px] leading-[14px]",
+                    date ? "text-text-muted" : "text-transparent",
+                  )}
+                  aria-label={date ? `${STEPS[i]} 날짜 ${date}` : undefined}
+                >
+                  {date ?? "-"}
+                </span>
+              ))}
+            </div>
+            <div className="relative my-1 grid grid-cols-5 items-center">
+              <div className="absolute left-[10%] right-[10%] top-1/2 h-0.5 -translate-y-1/2 bg-neutral-200" />
+              <div
+                className="absolute left-[10%] top-1/2 h-0.5 -translate-y-1/2 bg-brand-primary transition-[width]"
+                style={{ width: `${(step / (STEPS.length - 1)) * 80}%` }}
+              />
+              {STEPS.map((label, i) => {
+                const reached = i <= step;
+                const current = i === step;
+
+                return (
+                  <div key={`${label}-marker`} className="relative flex justify-center">
                     <div
                       className={cn(
-                        "h-0.5 w-10 sm:w-14",
-                        i < step ? "bg-brand-primary" : "bg-neutral-200",
+                        "size-3 rounded-full border-2 transition-colors",
+                        reached
+                          ? "border-brand-primary bg-brand-primary"
+                          : "border-neutral-300 bg-white",
+                        current && "ring-2 ring-brand-primary/30",
                       )}
                     />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex">
-            {STEPS.map((label, i) => (
-              <span
-                key={label}
-                className={cn(
-                  "w-[52px] text-[11px] sm:w-[68px]",
-                  i <= step ? "text-text-default" : "text-text-subtle",
-                )}
-              >
-                {label}
-              </span>
-            ))}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-5">
+              {STEPS.map((label, i) => {
+                const reached = i <= step;
+
+                return (
+                  <span
+                    key={label}
+                    className={cn(
+                      "px-0.5 text-center text-[11px] leading-[15px]",
+                      reached ? "text-text-default" : "text-text-subtle",
+                    )}
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
           </div>
           {actionSlot !== undefined ? (
             <div className="mt-1">{actionSlot}</div>

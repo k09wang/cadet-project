@@ -3,7 +3,6 @@
 import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { signIn, signOut } from "@/auth";
-import { prisma } from "@/lib/prisma";
 
 /**
  * 인증 서버 액션 (SPEC-AUTH).
@@ -14,8 +13,8 @@ export type LoginState = { error: string } | undefined;
 
 const INVALID_CREDENTIALS = "이메일 또는 비밀번호가 올바르지 않습니다.";
 
-function roleHome(role: "FAN" | "CREATOR" | undefined): string {
-  return role === "CREATOR" ? "/dashboard/creator" : "/creators";
+function roleHome(_role: "FAN" | "CREATOR" | undefined): string {
+  return "/";
 }
 
 /**
@@ -30,12 +29,6 @@ export async function loginWithCredentials(
   const password = String(formData.get("password") ?? "");
   const callbackUrl = String(formData.get("callbackUrl") ?? "");
 
-  // signIn 전에 role을 조회해 두면 세션 반영 타이밍 문제를 피할 수 있다.
-  const dbUser = await prisma.user.findUnique({
-    where: { email },
-    select: { role: true },
-  });
-
   try {
     await signIn("credentials", { email, password, redirect: false });
   } catch (err) {
@@ -45,11 +38,18 @@ export async function loginWithCredentials(
   }
 
   if (callbackUrl) redirect(callbackUrl);
-  redirect(roleHome(dbUser?.role));
+  redirect(roleHome(undefined));
 }
 
-/** Google OAuth 로그인 (provider 가 env 에 있을 때만 호출됨). */
+/**
+ * Google OAuth 로그인.
+ * 버튼은 항상 노출하되, provider env 가 없으면(주로 로컬 dev) 크래시 대신
+ * 안내 파라미터와 함께 /login 으로 되돌린다.
+ */
 export async function loginWithGoogle(): Promise<void> {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    redirect("/login?error=google_unconfigured");
+  }
   await signIn("google", { redirectTo: "/" });
 }
 

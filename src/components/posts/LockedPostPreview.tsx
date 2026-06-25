@@ -11,6 +11,7 @@ import { PurchaseButton } from "@/components/posts/PurchaseButton";
 export interface LockedPostPreviewProps {
   title: string;
   creatorId: string;
+  membershipCheckoutHref?: string;
   isPaid?: boolean;
   /** PAID 포스트일 때 필수 — 구매 CTA에 사용 (SPEC-009 FR-001). */
   postId?: string;
@@ -21,6 +22,7 @@ export interface LockedPostPreviewProps {
 export function LockedPostPreview({
   title,
   creatorId,
+  membershipCheckoutHref,
   isPaid = false,
   postId,
   priceKrw,
@@ -39,7 +41,19 @@ export function LockedPostPreview({
           ) : null}
         </div>
       )}
-      <div className="rounded-lg border border-dashed p-8 text-center space-y-4">
+      <div className="space-y-4 rounded-lg border border-dashed p-8 text-center">
+        <div
+          data-testid="locked-post-blur"
+          className="relative overflow-hidden rounded-[var(--radius-card)] border border-border-default bg-surface-subtle/80 p-5"
+        >
+          <div className="space-y-3 blur-sm" aria-hidden="true">
+            <div className="h-5 w-2/3 rounded-full bg-neutral-200" />
+            <div className="h-4 w-full rounded-full bg-neutral-100" />
+            <div className="h-4 w-11/12 rounded-full bg-neutral-100" />
+            <div className="h-32 rounded-[var(--radius-card)] bg-[#d8eeea]" />
+          </div>
+          <div className="absolute inset-0 bg-white/35" aria-hidden="true" />
+        </div>
         <p className="text-muted-foreground">
           {isPaid
             ? "유료 콘텐츠입니다. 구매 후 열람할 수 있습니다."
@@ -57,7 +71,7 @@ export function LockedPostPreview({
         ) : null}
         {!isPaid && (
           <a
-            href={`/creators/${creatorId}`}
+            href={membershipCheckoutHref ?? `/creators/${creatorId}?tab=membership`}
             className="inline-block rounded bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
           >
             멤버십 가입하기

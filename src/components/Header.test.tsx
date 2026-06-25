@@ -12,7 +12,9 @@ vi.mock("@/components/notification/NotificationBell", () => ({
 }));
 
 vi.mock("@/components/UserMenu", () => ({
-  UserMenu: ({ name }: { name: string }) => <button type="button">{name}</button>,
+  UserMenu: ({ name, creatorProfileId }: { name: string; creatorProfileId?: string }) => (
+    <button type="button">{creatorProfileId ? `${name}:${creatorProfileId}` : name}</button>
+  ),
 }));
 
 import { Header } from "@/components/Header";
@@ -48,14 +50,15 @@ describe("Header GNB", () => {
 
     render(await Header());
 
-    expectLink("작가 찾기", "/creators");
-    expectLink("작품 구매", "/creators?tab=artworks");
+    expectLink("내 홈", "/dashboard/fan");
+    expectLink("둘러보기", "/creators");
     expectLink("프로그램", "/programs");
     expectLink("관심 작가", "/dashboard/fan/bookmarks");
-    expectLink("마이페이지", "/dashboard/fan");
+    expectLink("내 멤버십", "/dashboard/fan/memberships");
+    expectLink("내 신청", "/dashboard/fan/applications");
+    expectLink("결제", "/dashboard/fan/payments");
     expect(screen.queryByText("내 정보")).toBeNull();
     expect(screen.queryByText("내 활동")).toBeNull();
-    expect(screen.queryByText("내 신청·결제")).toBeNull();
   });
 
   it("크리에이터는 운영, 주문 배송, 정산 중심 GNB를 본다", async () => {
@@ -68,12 +71,15 @@ describe("Header GNB", () => {
 
     render(await Header());
 
-    expectLink("홈", "/dashboard/creator");
-    expectLink("스튜디오", "/dashboard/creator/edit");
-    expectLink("작품·작업", "/dashboard/creator/artworks");
+    expectLink("홈", "/");
+    expectLink("내 프로필", "/creators/cp-1");
+    expectLink("관리 홈", "/dashboard/creator");
+    expectLink("작품", "/dashboard/creator/artworks");
+    expectLink("작업", "/dashboard/creator/works");
     expectLink("프로그램", "/dashboard/creator/programs");
     expectLink("주문·배송", "/dashboard/creator/artwork-orders");
     expectLink("정산", "/dashboard/creator/settlements");
+    expect(screen.getByRole("button", { name: "작가:cp-1" })).toBeTruthy();
     expect(screen.queryByText("포스트 작성")).toBeNull();
   });
 });

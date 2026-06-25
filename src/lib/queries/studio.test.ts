@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockFindUnique = vi.fn();
 const mockFindMany = vi.fn();
 const mockMembershipPlanFindFirst = vi.fn();
+const mockMembershipPlanFindMany = vi.fn();
+const mockPostFindMany = vi.fn();
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     creatorProfile: {
@@ -12,6 +14,10 @@ vi.mock("@/lib/prisma", () => ({
     },
     membershipPlan: {
       findFirst: (...args: unknown[]) => mockMembershipPlanFindFirst(...args),
+      findMany: (...args: unknown[]) => mockMembershipPlanFindMany(...args),
+    },
+    post: {
+      findMany: (...args: unknown[]) => mockPostFindMany(...args),
     },
   },
 }));
@@ -20,12 +26,16 @@ import {
   getCreatorStudio,
   getMembershipPlanForCheckout,
   listCreators,
+  listLockedPosts,
+  listPopularMembershipPlans,
 } from "@/lib/queries/studio";
 
 beforeEach(() => {
   mockFindUnique.mockReset();
   mockFindMany.mockReset();
   mockMembershipPlanFindFirst.mockReset();
+  mockMembershipPlanFindMany.mockReset();
+  mockPostFindMany.mockReset();
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -76,6 +86,66 @@ describe("getCreatorStudio", () => {
     expect(call.include.posts).toEqual(
       expect.objectContaining({ orderBy: { createdAt: "desc" } }),
     );
+  });
+});
+
+describe("listLockedPosts", () => {
+  it("홈 랜딩용 잠금 포스트만 최신순으로 조회한다", async () => {
+    mockPostFindMany.mockResolvedValue([{ id: "post-1" }]);
+
+    const result = await listLockedPosts(3);
+
+    expect(result).toEqual([{ id: "post-1" }]);
+    expect(mockPostFindMany).toHaveBeenCalledWith({
+      where: {
+        status: "PUBLISHED",
+        visibility: { in: ["MEMBER_ONLY", "PAID"] },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        visibility: true,
+        creatorProfile: {
+          select: {
+            id: true,
+            studioName: true,
+          },
+        },
+      },
+    });
+  });
+});
+
+describe("listPopularMembershipPlans", () => {
+  it("활성 멤버 수를 포함해 인기 멤버십 플랜을 조회한다", async () => {
+    mockMembershipPlanFindMany.mockResolvedValue([{ id: "plan-1" }]);
+
+    const result = await listPopularMembershipPlans(3);
+
+    expect(result).toEqual([{ id: "plan-1" }]);
+    expect(mockMembershipPlanFindMany).toHaveBeenCalledWith({
+      orderBy: [{ memberships: { _count: "desc" } }, { createdAt: "desc" }],
+      take: 3,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        priceKrw: true,
+        creatorProfile: {
+          select: {
+            id: true,
+            studioName: true,
+          },
+        },
+        memberships: {
+          where: { status: "ACTIVE" },
+          select: { id: true },
+        },
+      },
+    });
   });
 });
 

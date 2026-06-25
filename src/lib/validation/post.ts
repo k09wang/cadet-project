@@ -24,3 +24,9 @@ export const postCreateSchema = z
   });
 
 export type PostCreateInput = z.infer<typeof postCreateSchema>;
+
+export const postCommentCreateSchema = z.object({
+  body: z.string().trim().min(1).max(1000),
+});
+
+export type PostCommentCreateInput = z.infer<typeof postCommentCreateSchema>;
