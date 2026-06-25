@@ -112,6 +112,7 @@ describe("listLockedPosts", () => {
           select: {
             id: true,
             studioName: true,
+            profileImageUrl: true,
           },
         },
       },
@@ -138,6 +139,7 @@ describe("listPopularMembershipPlans", () => {
           select: {
             id: true,
             studioName: true,
+            profileImageUrl: true,
           },
         },
         memberships: {
