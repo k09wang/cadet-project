@@ -105,8 +105,9 @@ describe("/creators/[creatorId] (AC-002, AC-003, AC-007)", () => {
     fireEvent.click(screen.getByRole("tab", { name: "포스트" }));
     expect(screen.getByText("공개 포스트")).toBeTruthy();
     expect(screen.getByText("멤버 포스트")).toBeTruthy();
-    expect(screen.getAllByText("공개").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("멤버 전용").length).toBeGreaterThan(0);
+    // 현 PostCardList: PUBLIC은 배지 없음, MEMBER_ONLY는 "멤버십" 배지 + 잠금 안내 표시
+    expect(screen.getAllByText("멤버십").length).toBeGreaterThan(0);
+    expect(screen.getByText("멤버십 전용 콘텐츠입니다")).toBeTruthy();
   });
 
   it("renders artworks tab and purchase form", async () => {
