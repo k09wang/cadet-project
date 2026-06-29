@@ -1,0 +1,41 @@
+flowchart TB
+  classDef dom fill:#e8f7f8,stroke:#15c5ce,color:#0b3b3e
+  classDef ttl fill:#15c5ce,stroke:#0b3b3e,color:#ffffff
+
+  T["ArtBridge 시스템 요약 — 26 모델 / 16 Enum / 43 API 라우트<br/>Next.js 16 · Prisma · PostgreSQL · Auth.js(JWT) · 결제 Mock 폴백"]:::ttl
+
+  subgraph A["① 탐색 · 포트폴리오"]
+    direction TB
+    U["User · CreatorProfile"] --> W["CreatorWork<br/>(작품 갤러리)"]
+  end
+  subgraph B["② 멤버십 · 콘텐츠"]
+    direction TB
+    MP["MembershipPlan"] --> MM["Membership"]
+    PO["Post<br/>(공개/멤버/유료)"]
+  end
+  subgraph C["③ 프로그램 · 계약 (에스크로)"]
+    direction TB
+    PG["Program"] --> PA["ProgramApplication"] --> CT["Contract<br/>(양측 서명)"]
+  end
+  subgraph D["④ 결제 · 정산"]
+    direction TB
+    PY["Payment"] --> SE["Settlement"] --> AD["SettlementAdjustment"]
+  end
+  subgraph E["⑤ 작품 커머스"]
+    direction TB
+    AR["Artwork<br/>(재고)"] --> AO["ArtworkOrder"] --> SH["ArtworkShipment"]
+  end
+  subgraph F["⑥ 신뢰 · 알림"]
+    direction TB
+    RV["Review<br/>(양방향)"]
+    NO["Notification"]
+  end
+
+  T --> A
+  A --> C
+  CT --> PY
+  C --> F
+  MM -. 결제 .-> PY
+  AO -. 결제 .-> PY
+
+  class A,B,C,D,E,F dom

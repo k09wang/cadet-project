@@ -1,0 +1,244 @@
+erDiagram
+    User ||--o| CreatorProfile : "has"
+    User ||--o{ Membership : "subscribes"
+    User ||--o{ ProgramApplication : "applies"
+    User ||--o{ Notification : "receives"
+    User ||--o{ Payment : "pays(PaymentFan)"
+    User ||--o{ ArtworkInventoryReservation : "reserves"
+    User ||--o{ ArtworkOrder : "orders"
+    User ||--o{ ArtworkOrderIssue : "raises"
+    User ||--o{ Review : "authored(ReviewReviewer)"
+    User ||--o{ Review : "received(ReviewReviewee)"
+    User ||--o{ CommunityPost : "writes"
+    User ||--o{ Bookmark : "bookmarks"
+    User ||--o{ PostLike : "likes"
+    User ||--o{ PostComment : "comments"
+    User ||--o{ Account : "oauth"
+    User ||--o{ Session : "sessions"
+
+    Account }o--|| User : "belongs"
+    Session }o--|| User : "belongs"
+
+    CreatorProfile ||--o{ MembershipPlan : "offers"
+    CreatorProfile ||--o{ Post : "publishes"
+    CreatorProfile ||--o{ Program : "runs"
+    CreatorProfile ||--o{ CommunityPost : "hosts"
+    CreatorProfile ||--o{ Bookmark : "bookmarkedBy"
+    CreatorProfile ||--o{ CreatorWork : "portfolio"
+    CreatorProfile ||--o{ Artwork : "sells"
+    CreatorProfile ||--o| CreatorPayoutAccount : "payout"
+
+    MembershipPlan ||--o{ Membership : "instantiates"
+    Membership ||--o{ Payment : "billed"
+
+    Post ||--o{ Payment : "purchased"
+    Post ||--o{ PostLike : "liked"
+    Post ||--o{ PostComment : "commented"
+
+    Program ||--o{ ProgramApplication : "receives"
+    Program ||--o{ Review : "reviewed"
+
+    ProgramApplication ||--o| Contract : "has"
+    ProgramApplication ||--o| Payment : "escrow"
+
+    Contract ||--o{ Payment : "settles"
+
+    Payment ||--o| Settlement : "yields"
+    Settlement ||--o{ SettlementAdjustment : "adjusts"
+
+    Artwork ||--o{ ArtworkInventoryReservation : "held"
+    Artwork ||--o{ ArtworkOrder : "ordered"
+
+    ArtworkOrder ||--o| Payment : "paid"
+    ArtworkOrder ||--o| ArtworkShipment : "shipped"
+    ArtworkOrder ||--o{ ArtworkOrderIssue : "issues"
+
+    User {
+        string id PK
+        string email UK
+        string name
+        Role role
+        string passwordHash "nullable(OAuth)"
+        datetime emailVerified
+    }
+    Account {
+        string id PK
+        string userId FK
+        string provider
+        string providerAccountId
+    }
+    Session {
+        string id PK
+        string sessionToken UK
+        string userId FK
+        datetime expires
+    }
+    CreatorProfile {
+        string id PK
+        string userId FK,UK
+        string studioName
+        string category
+    }
+    MembershipPlan {
+        string id PK
+        string creatorProfileId FK
+        string title
+        int priceKrw
+    }
+    Membership {
+        string id PK
+        string userId FK
+        string planId FK
+        MembershipStatus status
+        datetime expiresAt
+    }
+    Post {
+        string id PK
+        string creatorProfileId FK
+        string title
+        PostVisibility visibility
+        PostStatus status
+        int priceKrw "nullable"
+    }
+    PostLike {
+        string id PK
+        string postId FK
+        string userId FK
+    }
+    PostComment {
+        string id PK
+        string postId FK
+        string authorId FK
+        string body
+    }
+    Program {
+        string id PK
+        string creatorProfileId FK
+        string title
+        ProgramStatus status
+        int priceKrw
+        datetime recruitDeadline
+        datetime deletedAt "soft-delete"
+    }
+    ProgramApplication {
+        string id PK
+        string programId FK
+        string userId FK
+        ProgramApplicationStatus status
+        datetime deliveryRequestedAt
+        datetime completionApprovedAt
+        datetime paymentExpiresAt
+    }
+    Contract {
+        string id PK
+        string applicationId FK,UK
+        json terms
+        int agreedAmount
+        datetime fanSignedAt
+        datetime creatorSignedAt
+    }
+    Payment {
+        string id PK
+        string membershipId FK "nullable"
+        string programApplicationId FK,UK "nullable"
+        string artworkOrderId FK,UK "nullable"
+        string contractId FK,UK "nullable"
+        string postId FK "nullable"
+        string fanUserId FK
+        int amount
+        PaymentStatus status
+        string merchantUid UK "nullable"
+    }
+    Settlement {
+        string id PK
+        string paymentId FK,UK
+        int grossAmount
+        int payout
+        SettlementStatus status
+        datetime availableAt
+    }
+    SettlementAdjustment {
+        string id PK
+        string settlementId FK
+        SettlementAdjustmentType type
+        int amount
+    }
+    CreatorPayoutAccount {
+        string id PK
+        string creatorProfileId FK,UK
+        CreatorPayoutBusinessType businessType
+        string bankName
+        PayoutVerificationStatus verificationStatus
+    }
+    CreatorWork {
+        string id PK
+        string creatorProfileId FK
+        string title
+        string kind
+    }
+    Artwork {
+        string id PK
+        string creatorProfileId FK
+        string title
+        int priceKrw
+        int stock
+        ArtworkStatus status
+    }
+    ArtworkInventoryReservation {
+        string id PK
+        string artworkId FK
+        string userId FK
+        ArtworkReservationStatus status
+        datetime expiresAt
+    }
+    ArtworkOrder {
+        string id PK
+        string artworkId FK
+        string fanUserId FK
+        ArtworkOrderStatus status
+        string recipientName
+        string shippingAddress
+        int totalAmount
+    }
+    ArtworkShipment {
+        string id PK
+        string orderId FK,UK
+        string carrier
+        string trackingNo
+        datetime deliveredAt
+    }
+    ArtworkOrderIssue {
+        string id PK
+        string orderId FK
+        string userId FK
+        ArtworkIssueType type
+        ArtworkIssueStatus status
+        string message
+    }
+    Notification {
+        string id PK
+        string userId FK
+        string type
+        string message
+        datetime readAt
+    }
+    Review {
+        string id PK
+        string programId FK
+        string userId FK "reviewer"
+        string revieweeId FK "nullable"
+        int rating
+        string_arr tags
+    }
+    CommunityPost {
+        string id PK
+        string creatorProfileId FK
+        string authorId FK
+        string title
+        string content
+    }
+    Bookmark {
+        string id PK
+        string fanId FK
+        string creatorProfileId FK
+    }
